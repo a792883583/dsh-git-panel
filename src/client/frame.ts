@@ -255,7 +255,7 @@ export function mountPanelColumn(
     try {
       handle.setPointerCapture(event.pointerId)
     } catch {
-      /* noop */
+      /* 忽略 */
     }
     document.body.style.userSelect = 'none'
     document.body.style.cursor = 'col-resize'
@@ -287,7 +287,7 @@ export function mountPanelColumn(
     try {
       handle.releasePointerCapture(event.pointerId)
     } catch {
-      /* noop */
+      /* 忽略 */
     }
     console.debug('[dsh-git-panel] drag end', event.clientX)
   }

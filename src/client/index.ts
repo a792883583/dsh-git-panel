@@ -83,7 +83,7 @@ export function apply(ctx: PanelClientContext): void {
     try {
       hidden = localStorage.getItem(HIDDEN_KEY) === '1'
     } catch {
-      /* noop */
+      /* 忽略 */
     }
 
     const render = (): void => {
@@ -102,7 +102,7 @@ export function apply(ctx: PanelClientContext): void {
       try {
         localStorage.setItem(HIDDEN_KEY, next ? '1' : '0')
       } catch {
-        /* noop */
+        /* 忽略 */
       }
       // 边缘处的切换箭头会自行更新方向与位置。
       column?.setVisible(!next)
@@ -139,7 +139,7 @@ export function apply(ctx: PanelClientContext): void {
       try {
         root?.unmount()
       } catch {
-        /* noop */
+        /* 忽略 */
       }
       column?.dispose()
     }
