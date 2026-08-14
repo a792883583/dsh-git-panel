@@ -1,0 +1,5 @@
+# dsh-git-panel — DSH web GUI git panel bundle.
+# Registered by `dsh plugin --profile web add link:<path>` (or npm once published).
+- insert:
+    - id: ui-git-panel
+      name: 'dsh-git-panel'
