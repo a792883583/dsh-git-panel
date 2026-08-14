@@ -1,4 +1,4 @@
-/** Typed transport for the /git-panel routes. */
+/** /git-panel 路由的类型化传输层。 */
 import type { BranchesView, GraphView, OpResult } from '../core/types.ts'
 
 export interface GitError {
@@ -26,9 +26,9 @@ async function post<T>(path: string, payload: unknown): Promise<Envelope<T>> {
   }
 }
 
-/** The browser-side git panel API. */
+/** 浏览器端的 git 面板 API。 */
 export class GitPanelApi {
-  /** Lightweight: current branch only (chip label). */
+  /** 轻量接口：仅获取当前分支（用于 chip 标签）。 */
   current(path: string) {
     return post<{ repo: string; current: string }>('/git-panel/current', { path })
   }

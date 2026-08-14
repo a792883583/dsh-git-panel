@@ -1,21 +1,21 @@
-/** Commit DAG layout: assign each commit a lane (GitLens/gitk-style columns). */
+/** 提交 DAG 布局：为每个提交分配一条 lane（GitLens/gitk 风格列）。 */
 
 import type { GraphCommit } from '../core/types.ts'
 
 export interface LayoutCommit extends GraphCommit {
-  /** Row index, 0 = newest (top). */
+  /** 行索引，0 = 最新（顶部）。 */
   row: number
-  /** Lane index (0-based). */
+  /** lane 索引（从 0 开始）。 */
   lane: number
 }
 
 /**
- * Lay the commits out into rows and lanes. Input is in git log --date-order
- * (newest first). Processed oldest-first: a commit inherits the lane of a
- * child that references it; otherwise it takes a free lane (or a new one).
+ * 将提交布局到行与 lane 中。输入是 git log --date-order（最新在前）的顺序。
+ * 处理顺序为最旧到最新：一个提交会继承某个引用它的子提交所在的 lane；否则
+ * 它会占用一个空 lane（或新开一个）。
  */
 export function layoutGraph(commits: GraphCommit[]): LayoutCommit[] {
-  const order = commits.map((commit, index) => ({ commit, index })).reverse() // oldest first
+  const order = commits.map((commit, index) => ({ commit, index })).reverse() // 最旧在前
   const lanes: Array<string | null> = []
   const placed = new Map<string, LayoutCommit>()
 

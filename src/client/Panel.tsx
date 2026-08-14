@@ -1,6 +1,6 @@
 /**
- * The git panel React surface: branch list (local/remote with ahead/behind,
- * switch/pull/fetch) and a GitLens-style commit graph with lanes.
+ * git 面板的 React 界面：分支列表（本地/远程，含 ahead/behind，
+ * 可切换/拉取/抓取）以及带 lane 的 GitLens 风格提交图谱。
  * @module dsh-git-panel/client/Panel
  */
 
@@ -87,7 +87,7 @@ function ensureStyle(): void {
   document.head.appendChild(tag)
 }
 
-/** GitLens-style branch row: double-click to activate, right-click for the menu. */
+/** GitLens 风格的分支行：双击激活，右键打开菜单。 */
 const BranchRowView = memo(function BranchRowView(props: {
   row: BranchRow
   isRemote: boolean
@@ -126,7 +126,7 @@ const BranchRowView = memo(function BranchRowView(props: {
   )
 })
 
-/** Shared graph geometry & text metrics (module-level: stable references). */
+/** 共享的图谱几何与文本度量（模块级：稳定的引用）。 */
 const ROW_HEIGHT = 24
 const LANE_WIDTH = 14
 const NODE_RADIUS = 4
@@ -134,12 +134,12 @@ const PAD_LEFT = 10
 const PAD_TOP = 10
 const LANE_COLOR_COUNT = 12
 
-/** Extra rows rendered above/below the viewport so fast scrolling never flashes. */
+/** 在视口上下额外渲染的行数，保证快速滚动时不闪烁。 */
 const GRAPH_BUFFER_ROWS = 10
 
 const laneColor = (lane: number): string => `var(--dsh-gp-lane-${lane % LANE_COLOR_COUNT})`
 
-/** Approximate rendered width of text (CJK chars are ~2× an ASCII char). */
+/** 文本的近似渲染宽度（CJK 字符约为 ASCII 字符的 2 倍）。 */
 const labelWidth = (text: string): number =>
   [...text].reduce((w, ch) => w + (ch.charCodeAt(0) > 255 ? 12 : 6.5), 0)
 
@@ -153,12 +153,10 @@ const fitByWidth = (text: string, maxWidth: number): string => {
 }
 
 /**
- * The SVG body of the graph tab, memoized on its geometry: clicking a node
- * only updates the detail strip, so the 300-commit DOM is never rebuilt for
- * a click. Truncated texts are cached per column width, so re-renders never
- * re-walk every subject character by character. Only rows inside the visible
- * viewport (± a buffer) are rendered; the SVG keeps its full height so the
- * scrollbar stays correct.
+ * 图谱标签页的 SVG 主体，按其几何信息做 memo：点击某个节点只更新详情条，
+ * 因此 300 个提交的 DOM 在点击时不会重建。被截断的文本按每列的宽度缓存，
+ * 因此重渲染时不会逐字符重新遍历每个 subject。只渲染可见视口内（±一个缓冲
+ * 区）的行；SVG 保持完整高度，这样滚动条始终正确。
  */
 const GraphSvg = memo(function GraphSvg(props: {
   layout: LayoutCommit[]
@@ -171,8 +169,8 @@ const GraphSvg = memo(function GraphSvg(props: {
   onSelect: (commit: LayoutCommit) => void
 }): React.ReactElement {
   const { layout, graph, textX, commitWidth, labelZone, graphWidth, height, onSelect } = props
-  const rootRef = useRef<SVGSVGElement>(null)  // Visible row window; Infinity = "not measured yet" (renders everything for
-  // one frame until the layout effect measures the real viewport).
+  const rootRef = useRef<SVGSVGElement>(null)  // 可见行的窗口；Infinity = "尚未测量"（渲染全部内容，
+  // 直到 layout effect 测量出真实视口）。
   const [viewport, setViewport] = useState({ first: 0, last: Infinity })
 
   useLayoutEffect(() => {
@@ -183,10 +181,9 @@ const GraphSvg = memo(function GraphSvg(props: {
     const measure = (): void => {
       const rect = root.getBoundingClientRect()
       const srect = scroller.getBoundingClientRect()
-      // Viewport top/bottom expressed in the SVG's own coordinate space.
-      // getBoundingClientRect already accounts for scrolling — adding
-      // scrollTop here made the window drift down as the user scrolled,
-      // blanking the graph below.
+      // 用 SVG 自身的坐标空间表示的视口顶部/底部。
+      // getBoundingClientRect 已经计入了滚动——这里再加 scrollTop 会让窗口
+      // 随用户滚动向下漂移，使图谱下方变空白。
       const v0 = srect.top - rect.top
       const v1 = v0 + scroller.clientHeight
       const first = Math.max(0, Math.floor((v0 - PAD_TOP) / ROW_HEIGHT) - GRAPH_BUFFER_ROWS)
@@ -225,9 +222,8 @@ const GraphSvg = memo(function GraphSvg(props: {
     () => Object.entries(graph.tips).filter(([, sha]) => bySha.has(sha)),
     [graph.tips, bySha],
   )
-  // One label per row: prefer the current branch, then the first by name.
-  // Local + remote branches pointing at the same commit otherwise stack on
-  // top of each other at the same y.
+  // 每行一个标签：优先当前分支，然后按名称取第一个。指向同一提交的本地 +
+  // 远程分支否则都会堆叠在同一个 y 处。
   const tipLabelByRow = useMemo(() => {
     const byRow = new Map<number, string>()
     const sorted = [...tipBranches].sort(([a], [b]) => {
@@ -244,7 +240,7 @@ const GraphSvg = memo(function GraphSvg(props: {
     return byRow
   }, [tipBranches, bySha, graph.current])
 
-  // Cached truncations: recomputed only when a column width actually moves.
+  // 缓存截断结果：仅在列宽真正变化时重新计算。
   const subjects = useMemo(
     () => new Map(layout.map((c) => [c.sha, fitByWidth(c.subject, commitWidth - 2)])),
     [layout, commitWidth],
@@ -270,8 +266,7 @@ const GraphSvg = memo(function GraphSvg(props: {
     const parents = commit.parents
       .map((parentSha) => bySha.get(parentSha))
       .filter((parent): parent is LayoutCommit => parent !== undefined)
-    // Draw an edge when either end is inside the window, so lines crossing
-    // the top/bottom edge of the viewport stay continuous.
+    // 当任一端位于窗口内时就绘制边，这样跨越视口顶部/底部边缘的连线保持连续。
     const drawEdges = inWindow(commit.row) || parents.some((parent) => inWindow(parent.row))
     if (!drawEdges) return
     const x = xOf(commit.lane)
@@ -286,10 +281,9 @@ const GraphSvg = memo(function GraphSvg(props: {
             stroke={color} strokeWidth="1.2" opacity="0.85" />,
         )
       } else {
-        // GitLens-style winding path: leaves the child VERTICALLY, sweeps
-        // horizontally mid-way, and enters the parent VERTICALLY. Control
-        // points are vertically aligned with the endpoints so both tangents
-        // are vertical.
+        // GitLens 风格的绕行路径：从子提交 VERTICALLY 离开，在水平方向中途
+        // 横扫，再 VERTICALLY 进入父提交。控制点与端点垂直对齐，因此两个
+        // 切线都是垂直的。
         const dy = Math.min(12, (py - y) / 2)
         const d = `M ${x} ${y} C ${x} ${y + dy}, ${px} ${py - dy}, ${px} ${py}`
         edges.push(
@@ -341,7 +335,7 @@ const GraphSvg = memo(function GraphSvg(props: {
   )
 })
 
-/** The commit graph tab (memoized: its props change only on load/resize). */
+/** 提交图谱标签页（memoized：其 props 只在加载/缩放时变化）。 */
 const GraphViewComponent = memo(function GraphViewComponent(props: { graph: GraphView; width: number }): React.ReactElement {
   const { graph, width } = props
   const t = useT()
@@ -350,15 +344,14 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
   const onSelect = useCallback((commit: LayoutCommit) => setSelected(commit), [])
 
   const lanes = Math.max(1, ...layout.map((c) => c.lane + 1))
-  // Right edge of the fixed lane area; the commit column starts after a
-  // user-adjustable gap (see gapOverride below).
+  // 固定 lane 区域的右边缘；提交列在其后开始（见下方 gapOverride 中用户可调
+  // 的间隔）。
   const laneRight = PAD_LEFT + lanes * LANE_WIDTH
   const height = PAD_TOP + layout.length * ROW_HEIGHT + 12
 
-  // Three independently sized columns: lanes (fixed width), commit subjects,
-  // branch labels. The commit and branch columns each get their OWN full-
-  // height draggable divider, so resizing one never touches the other.
-  // Widths persist to localStorage; 0 means "auto-size to the widest text".
+  // 三个彼此独立缩放的列：lane（固定宽度）、提交 subject、分支标签。提交列
+  // 与分支列各有自己的整列高可拖拽分隔线，因此缩放其一不会影响另一个。
+  // 宽度写入 localStorage；0 表示"按最宽的文本自动调整大小"。
   const readSaved = (key: string): number => {
     try {
       const saved = Number(localStorage.getItem(key))
@@ -373,9 +366,8 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
     commitRef.current = commitOverride
   }, [commitOverride])
 
-  // User-adjustable gap between the lane area and the commit column: the
-  // LEFT header divider moves the commit column's left edge, so its width
-  // changes while the right edge stays put. Default 14px.
+  // 用户在 lane 区域与提交列之间可调的间隔：左侧的标题分隔线会移动提交列的
+  // 左边缘，因此它的宽度改变而右边缘保持不变。默认 14px。
   const [gapOverride, setGapOverride] = useState<number>(() => readSaved('dsh-gp-graph-col-gap'))
   const gapRef = useRef(gapOverride)
   useEffect(() => {
@@ -384,10 +376,9 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
   const gap = gapOverride > 0 ? gapOverride : 14
   const textX = laneRight + gap
 
-  // The branch column has a fixed, generous width (not resizable); only the
-  // commit column is user-adjustable. The graph GROWS with the commit
-  // column — widening it widens the whole graph and the panel scrolls
-  // horizontally, so the branch column keeps its width.
+  // 分支列有固定且较宽的宽度（不可缩放）；只有提交列是用户可调的。图谱会随
+  // 提交列 GROW——加宽它会让整个图谱变宽，面板随之水平滚动，因此分支列保持
+  // 自己的宽度。
   const BRANCH_COL_WIDTH = 240
   const maxSubjectWidth = Math.max(0, ...layout.map((c) => labelWidth(c.subject)))
   const autoCommit = Math.max(60, maxSubjectWidth + 16)
@@ -417,7 +408,7 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
       try {
         localStorage.setItem(key, String(valueRef.current))
       } catch {
-        /* storage unavailable — keep in-memory value */
+        /* 存储不可用——保留内存中的值 */
       }
     }
     window.addEventListener('pointermove', onMove)
@@ -428,15 +419,13 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
     try {
       localStorage.removeItem(key)
     } catch {
-      /* ignore */
+      /* 忽略 */
     }
   }
-  // Dragging the header dividers moves only the commit column; the branch
-  // column is fixed. The caps are generous: extra width just makes the
-  // graph scroll horizontally.
+  // 拖拽标题栏分隔线只会移动提交列；分支列是固定的。上限很宽松：多余的宽度
+  // 只是让图谱水平滚动而已。
   const startCommitResize = startResize('dsh-gp-graph-col-commit', commitRef, setCommitOverride, commitWidth, 60, 900)
-  // The LEFT divider moves the commit column's LEFT edge: its width changes
-  // while the right edge stays fixed.
+  // 左侧分隔线移动提交列的 LEFT 边缘：它的宽度变化而右边缘固定。
   const startLeftResize = (event: React.PointerEvent): void => {
     event.preventDefault()
     event.stopPropagation()
@@ -457,7 +446,7 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
         localStorage.setItem('dsh-gp-graph-col-gap', String(gapRef.current))
         localStorage.setItem('dsh-gp-graph-col-commit', String(commitRef.current))
       } catch {
-        /* storage unavailable — keep in-memory values */
+        /* 存储不可用——保留内存中的值 */
       }
     }
     window.addEventListener('pointermove', onMove)
@@ -466,9 +455,8 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
 
   return (
     <div style={{ padding: '0 8px', position: 'relative', width: 'max-content' }}>
-      {/* Three-column header, titles laid out left-to-right at each column's
-          start. Two draggable dividers flank the commit column: the left
-          one moves its left edge, the right one its right edge. */}
+      {/* 三列表头，标题在各列起点从左到右排布。两条可拖拽分隔线夹着提交列：
+          左侧的移动它的左边缘，右侧的移动它的右边缘。 */}
       <div
         style={{
           position: 'relative',
@@ -519,7 +507,7 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
   )
 })
 
-/** The full panel. */
+/** 完整的面板。 */
 export function GitPanel(props: { path: string; api: GitPanelApi }): React.ReactElement {
   const { path, api } = props
   const t = useT()
@@ -527,12 +515,12 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
   const [branches, setBranches] = useState<BranchesView | null>(null)
   const [graph, setGraph] = useState<GraphView | null>(null)
   const [loading, setLoading] = useState(false)
-  // Monotonic guard for in-flight loads (see load()).
+  // 对进行中的加载做单调递增保护（见 load()）。
   const loadSeq = useRef(0)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null)
   const [width, setWidth] = useState(300)
-  // Right-click context menu.
+  // 右键上下文菜单。
   const [menu, setMenu] = useState<{
     x: number
     y: number
@@ -547,10 +535,9 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
 
   const load = useCallback(async () => {
     if (!path) return
-    // Session switch: drop the previous repo's data before loading the new
-    // path, so a failed load never leaves stale branches on screen. A
-    // sequence guard discards responses that resolve AFTER the path has
-    // changed again (in-flight fetch from the old session must not land).
+    // 会话切换：在加载新路径前丢弃上一个仓库的数据，这样一次失败的加载永不
+    // 会在屏幕上留下过期的分支。序列号保护会丢弃在新路径再次改变之后才返回的
+    // 响应（来自旧会话的在途请求绝不能落地）。
     const seq = ++loadSeq.current
     setLoading(true)
     setBranches(null)
@@ -569,7 +556,7 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
     void load()
   }, [load])
 
-  // The input-dock chip dispatches this after a successful branch switch.
+  // 输入 dock 的 chip 会在一次成功的分支切换后派发这个事件。
   useEffect(() => {
     const onSwitched = (): void => {
       void load()
@@ -611,9 +598,9 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
 
   const repoName = branches?.repo ?? ''
 
-  // ---- context menu actions ----
-  // Stable references so memoized BranchRowViews don't re-render for
-  // unrelated state changes (message, menu, tab…).
+  // ---- 上下文菜单操作 ----
+  // 稳定的引用，使被 memo 化的 BranchRowView 不会因无关状态变化（message、
+  // menu、tab…）而重渲染。
   const openMenu = useCallback((event: React.MouseEvent, row: BranchRow, isRemote: boolean): void => {
     setMenu({
       x: Math.min(event.clientX, window.innerWidth - 190),
@@ -647,7 +634,7 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
       closeMenu()
       return
     }
-    // Basic git ref-name sanity: no spaces or git-forbidden characters.
+    // 对 git 引用名做基本合理性检查：不允许空格或 git 禁止的字符。
     if (!/^[^\s~^:?*[\\]+$/.test(name) || name.startsWith('-')) {
       setMessage({ text: t('error.invalidName', { name }), kind: 'err' })
       return

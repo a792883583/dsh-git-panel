@@ -1,40 +1,40 @@
-/** Shared envelope/error types for the git panel. */
+/** git 面板共享的封装/错误类型。 */
 
-/** A structured git operation error with a stable code. */
+/** 带稳定错误码的结构化 git 操作错误。 */
 export interface GitError {
   code: string
   message: string
 }
 
-/** One branch row (local or remote). */
+/** 一条分支记录（本地或远程）。 */
 export interface BranchRow {
-  /** Short ref name (e.g. `main`, `origin/feature/x`). */
+  /** 短引用名（例如 `main`、`origin/feature/x`）。 */
   name: string
-  /** Short object id (7 chars). */
+  /** 短对象 id（7 个字符）。 */
   sha: string
-  /** Committer date as ISO string. */
+  /** 提交者日期，ISO 字符串。 */
   date: string
-  /** Last commit subject (truncated). */
+  /** 最后一次提交的主题（截断）。 */
   subject: string
-  /** Whether this is the checked-out branch. */
+  /** 是否为当前检出的分支。 */
   current?: boolean
-  /** Ahead of upstream (local branches with an upstream only). */
+  /** 领先上游的提交数（仅带上游的本地分支）。 */
   ahead?: number
-  /** Behind upstream (local branches with an upstream only). */
+  /** 落后上游的提交数（仅带上游的本地分支）。 */
   behind?: number
 }
 
-/** The full branch view. */
+/** 完整的分支视图。 */
 export interface BranchesView {
-  /** Workspace-relative repo display name (basename of the top level). */
+  /** 相对工作区的仓库显示名（顶层目录的基名）。 */
   repo: string
-  /** Current branch short name ('' when detached HEAD). */
+  /** 当前分支短名（HEAD 游离时为 ''）。 */
   current: string
   local: BranchRow[]
   remote: BranchRow[]
 }
 
-/** One commit node for the graph. */
+/** 图中的单个提交节点。 */
 export interface GraphCommit {
   sha: string
   parents: string[]
@@ -43,12 +43,12 @@ export interface GraphCommit {
   subject: string
 }
 
-/** Branch tip map: short branch name -> full commit sha. */
+/** 分支指针映射：短分支名 -> 完整提交 sha。 */
 export interface GraphTips {
   [branch: string]: string
 }
 
-/** The graph view payload. */
+/** 图视图的载荷。 */
 export interface GraphView {
   repo: string
   current: string
@@ -56,10 +56,10 @@ export interface GraphView {
   tips: GraphTips
 }
 
-/** Result of a mutating git operation. */
+/** 变更性 git 操作的结果。 */
 export interface OpResult {
   ok: boolean
-  /** Truncated command output for display. */
+  /** 用于展示的截断命令输出。 */
   output: string
   error?: GitError
 }

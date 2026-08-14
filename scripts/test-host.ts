@@ -1,6 +1,6 @@
 /**
- * Host git-service end-to-end test against a scratch repo.
- * Bundled with esbuild and run with node — no DSH runtime required.
+ * 针对临时仓库的宿主 git-service 端到端测试。
+ * 用 esbuild 打包后由 node 运行——无需 DSH 运行时。
  */
 import { spawn } from 'node:child_process'
 import { GitService, type GitRunner } from '../src/host/git-service.ts'
@@ -29,9 +29,9 @@ function check(name: string, ok: boolean, extra = ''): void {
 }
 
 async function main(): Promise<void> {
-  // Ahead/behind is computed against the local remote-tracking refs (same
-  // semantics as git status / GitLens): refresh them first so the scenario
-  // (main ahead 1 / behind 1) is visible from the start.
+  // Ahead/behind 是基于本地远程跟踪引用（remote-tracking refs）计算的，
+  // 语义与 git status / GitLens 一致：先刷新它们，以便从一开始就能看到
+  // “main 领先上游 1 / 落后上游 1”的场景。
   const initFetch = await service.fetchAll(REPO)
   check('初始 fetch 成功', initFetch.ok, initFetch.error?.message)
 

@@ -1,9 +1,7 @@
 /**
- * Plugin copy in three languages. The active language is auto-detected:
- * the DSH platform locale wins (zh → Simplified Chinese), then the browser
- * language (es → Spanish), and everything else defaults to Simplified
- * Chinese. Copy lives here instead of the platform's locale namespaces so
- * the plugin can ship Spanish, which the platform does not provide.
+ * 三种语言的插件文案。活动语言会自动检测：DSH 平台语言优先（zh → 简体中文），
+ * 然后是浏览器语言（es → 西班牙语），其余情况一律默认为简体中文。文案放在
+ * 这里而不放在平台的语言命名空间中，是因为插件需要提供平台并不包含的西班牙语。
  * @module dsh-git-panel/client/i18n
  */
 
@@ -139,7 +137,7 @@ const DICTS: Record<Lang, Dict> = {
   },
 }
 
-/** Structural face of the platform locale service (see client/index.ts). */
+/** 平台 locale 服务的结构（参见 client/index.ts）。 */
 interface LocaleService {
   getLocale(): { active: string }
   subscribe(fn: () => void): () => void
@@ -156,20 +154,20 @@ function notify(): void {
 }
 
 function detectLang(): Lang {
-  // 1. The platform locale wins when it is explicitly Chinese.
+  // 1. 当平台语言明确为中文时，平台语言优先。
   const active = locale?.getLocale().active
   if (active === 'zh') return 'zh'
-  // 2. The platform only ships zh/en, so a Spanish browser lands on en —
-  //    sniff the browser language to give Spanish users their copy.
+  // 2. 平台只提供 zh/en，因此西班牙语浏览器会落到 en —— 嗅探浏览器语言，
+  //   以便给西语用户提供西语文案。
   const nav = (navigator.language || '').toLowerCase()
   if (nav.startsWith('es')) return 'es'
-  // 3. Everything else defaults to Simplified Chinese.
+  // 3. 其余情况一律默认为简体中文。
   if (active === 'en') return 'en'
   if (nav.startsWith('zh')) return 'zh'
   return 'zh'
 }
 
-/** Wire the platform locale service; call once from the client entry. */
+/** 接入平台 locale 服务；由客户端入口调用一次。 */
 export function initI18n(service: LocaleService): void {
   if (locale === service) return
   locale = service
@@ -192,7 +190,7 @@ const subscribe = (fn: () => void): (() => void) => {
 
 const getSnapshot = (): number => revision
 
-/** Translate a key in the active language. Missing keys fall back to zh. */
+/** 按活动语言翻译一个键。缺失的键回退到 zh。 */
 export function t(key: string, params?: Record<string, string>): string {
   const text = DICTS[lang][key] ?? DICTS.zh[key] ?? key
   if (params === undefined) return text
@@ -200,9 +198,8 @@ export function t(key: string, params?: Record<string, string>): string {
 }
 
 /**
- * React hook: re-renders the component when the active language changes.
- * The returned t() is module-stable, so memoized callbacks can depend on it
- * safely.
+ * React hook：当活动语言变化时重新渲染组件。返回的 t() 是模块级稳定引用，
+ * 因此被 memo 化的回调可以安全地依赖它。
  */
 export function useT(): (key: string, params?: Record<string, string>) => string {
   useSyncExternalStore(subscribe, getSnapshot)

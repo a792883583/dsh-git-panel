@@ -2,6 +2,24 @@
   "name": "dsh-git-panel",
   "version": "0.1.0",
   "description": "DSH web GUI git panel: local/remote branches with ahead/behind, one-click branch switch / pull / fetch, and a GitLens-style commit graph.",
+  "license": "MIT",
+  "author": "Jaden Tang <jaden.tang@sjfood.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/a792883583/dsh-git-panel.git"
+  },
+  "homepage": "https://github.com/a792883583/dsh-git-panel",
+  "bugs": {
+    "url": "https://github.com/a792883583/dsh-git-panel/issues"
+  },
+  "keywords": [
+    "dsh",
+    "plugin",
+    "git",
+    "branch",
+    "commit-graph",
+    "panel"
+  ],
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -19,6 +37,8 @@
     "lib",
     "cordis.patch.yml",
     "README.md",
+    "README.en.md",
+    "README.es.md",
     "LICENSE"
   ],
   "dsh": {

@@ -1,8 +1,7 @@
 /**
- * Host git service: workspace-gated git operations run through the managed
- * subprocess seam. The browser may only run git on registered workspace
- * roots (the workspace gate is the security boundary of the /git-panel
- * routes).
+ * 宿主侧 git 服务：以工作区为边界约束的 git 操作，通过托管子进程接缝执行。
+ * 浏览器只能在已注册的工作区根目录上运行 git（工作区门禁是 /git-panel
+ * 各路由的安全边界）。
  * @module dsh-git-panel/host/git-service
  */
 
@@ -12,28 +11,28 @@ import type {} from '@deepseek-ai/dsh-subprocess'
 import type { SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import type { BranchesView, BranchRow, GitError, GraphCommit, GraphTips, GraphView, OpResult } from '../core/types.ts'
 
-/** One finished git invocation. */
+/** 一次已完成的 git 调用。 */
 export interface GitRunResult {
   exitCode: number | null
   stdout: string
   stderr: string
 }
 
-/** The spawn seam git runs through (production: the subprocess service). */
+/** git 经过的 spawn 接缝（生产环境中即子进程服务）。 */
 export interface GitRunner {
   run(argv: readonly string[], cwd: string): Promise<GitRunResult>
 }
 
-/** Collected-output cap for one git command. */
+/** 单条 git 命令的收集输出上限。 */
 const OUTPUT_CAP_BYTES = 1 << 20
 
-/** Workspace-membership verdict. */
+/** 工作区归属判定结果。 */
 export type WorkspaceVerdict = { ok: true; canonical: string } | { ok: false; error: GitError }
 
-/** Canonicalize a path and require it to equal a registered workspace root. */
+/** 规范化路径并要求其等于一个已注册的工作区根目录。 */
 export type WorkspaceGate = (path: string) => Promise<WorkspaceVerdict>
 
-/** Production runner over `ctx.subprocess`. */
+/** 基于 `ctx.subprocess` 的生产运行器。 */
 export function subprocessRunner(ctx: Context): GitRunner {
   return {
     async run(argv, cwd) {
@@ -57,20 +56,19 @@ export function subprocessRunner(ctx: Context): GitRunner {
 }
 
 /**
- * Record/field separators for git --format output. NUL is the conventional
- * choice but Node forbids NUL in spawn argv — the subprocess service rejects
- * it the same way — so records use \x1e and fields \x1f (never produced by
- * git in practice). git appends a newline after every record, so each split
- * record except the first starts with "\n" — stripped in splitRecords.
+ * git --format 输出的记录/字段分隔符。NUL 是常规选择，但 Node 禁止在
+ * spawn argv 中出现 NUL——子进程服务同样会拒绝——因此记录用 \x1e、字段用
+ * \x1f（实际中 git 不会产生这些字符）。git 会在每条记录后追加换行，所以
+ * 除第一条外的每条拆分记录都以 "\n" 开头——在 splitRecords 中剥离。
  */
 const REC = '\u001e'
 const FIELD = '\u001f'
-/** Escape control characters that would corrupt the output (except the separators). */
+/** 转义会破坏输出的控制字符（分隔符除外）。 */
 function sanitize(text: string): string {
   return text.replace(/[\u0000-\u001d\u007f]/g, ' ')
 }
 
-/** Split a git --format stream into records, dropping the per-record newline. */
+/** 将 git --format 流拆分为记录，去掉每条记录自带的换行。 */
 function splitRecords(text: string): string[] {
   return text
     .split(REC)
@@ -78,7 +76,7 @@ function splitRecords(text: string): string[] {
     .filter((record) => record !== '')
 }
 
-/** The workspace-gated git service. */
+/** 以工作区为边界约束的 git 服务。 */
 export class GitService {
   constructor(
     private readonly runner: GitRunner,
@@ -91,20 +89,20 @@ export class GitService {
     return verdict.canonical
   }
 
-  /** Resolve the repo display name (basename of the top-level directory). */
+  /** 解析仓库显示名（顶层目录的基名）。 */
   private async repoName(canonical: string): Promise<string> {
     const run = await this.runner.run(['rev-parse', '--show-toplevel'], canonical)
     if (run.exitCode !== 0) return canonical.split(/[\\/]/).pop() ?? canonical
     return run.stdout.trim().split(/[\\/]/).pop() ?? canonical
   }
 
-  /** The current branch short name ('' when detached). */
+  /** 当前分支短名（HEAD 游离时为空）。 */
   async currentBranch(canonical: string): Promise<string> {
     const run = await this.runner.run(['symbolic-ref', '--quiet', '--short', 'HEAD'], canonical)
     return run.exitCode === 0 ? run.stdout.trim() : ''
   }
 
-  /** Lightweight current-branch probe (one or two git calls) for the chip label. */
+  /** 轻量级当前分支探测（一次或两次 git 调用），用于 chip 标签。 */
   async current(path: string): Promise<{ repo: string; current: string }> {
     const canonical = await this.requireWorkspace(path)
     const [repo, current] = await Promise.all([
@@ -114,7 +112,7 @@ export class GitService {
     return { repo, current }
   }
 
-  /** Branch list with ahead/behind vs upstream. */
+  /** 带 ahead/behind 相对上游的分支列表。 */
   async branches(path: string): Promise<BranchesView> {
     const canonical = await this.requireWorkspace(path)
     const [repo, current] = await Promise.all([
@@ -122,8 +120,8 @@ export class GitService {
       this.currentBranch(canonical),
     ])
 
-    // One pass over local + remote refs. Full ref names are stripped below
-    // (refname:short would erase the heads/remotes distinction).
+    // 一趟遍历本地 + 远程引用。下面会剥离完整引用名
+    // （refname:short 会抹掉 heads/remotes 的区别）。
     const run = await this.runner.run(
       ['for-each-ref', '--format=' + `%(refname)${FIELD}%(objectname:short)${FIELD}%(committerdate:iso8601)${FIELD}%(subject)${FIELD}%(upstream:short)${REC}`, 'refs/heads', 'refs/remotes'],
       canonical,
@@ -158,7 +156,7 @@ export class GitService {
       }
     }
 
-    // ahead/behind vs upstream, one git call per tracked local branch.
+    // ahead/behind 相对上游，每个跟踪的本地分支一次 git 调用。
     await Promise.all(withUpstream.map(async ([row, upstream]) => {
       const count = await this.runner.run(['rev-list', '--left-right', '--count', `${row.name}...${upstream}`], canonical)
       if (count.exitCode !== 0) return
@@ -175,7 +173,7 @@ export class GitService {
     return { repo, current, local: sortRows(local), remote: sortRows(remote) }
   }
 
-  /** Switch to an existing branch (or create a local tracking branch for a remote). */
+  /** 切换到已存在的分支（或为远程分支创建本地跟踪分支）。 */
   async switchBranch(path: string, branch: string): Promise<OpResult> {
     const canonical = await this.requireWorkspace(path)
     const argv: string[] = branch.startsWith('origin/')
@@ -188,7 +186,7 @@ export class GitService {
     return { ok: true, output: run.stdout.trim() }
   }
 
-  /** Pull the current branch (uses its upstream). */
+  /** 拉取当前分支（使用其上游）。 */
   async pull(path: string): Promise<OpResult> {
     const canonical = await this.requireWorkspace(path)
     const run = await this.runner.run(['pull'], canonical)
@@ -198,7 +196,7 @@ export class GitService {
     return { ok: true, output: run.stdout.trim() }
   }
 
-  /** Fetch all remotes with prune. */
+  /** 拉取所有远程，并执行 prune。 */
   async fetchAll(path: string): Promise<OpResult> {
     const canonical = await this.requireWorkspace(path)
     const run = await this.runner.run(['fetch', '--all', '--prune'], canonical)
@@ -208,7 +206,7 @@ export class GitService {
     return { ok: true, output: run.stdout.trim() }
   }
 
-  /** Rename a local branch (git branch -m). */
+  /** 重命名本地分支（git branch -m）。 */
   async renameBranch(path: string, from: string, to: string): Promise<OpResult> {
     const canonical = await this.requireWorkspace(path)
     const run = await this.runner.run(['branch', '-m', from, to], canonical)
@@ -218,7 +216,7 @@ export class GitService {
     return { ok: true, output: run.stdout.trim() }
   }
 
-  /** Force-delete a local branch (git branch -D). */
+  /** 强制删除本地分支（git branch -D）。 */
   async deleteBranch(path: string, branch: string): Promise<OpResult> {
     const canonical = await this.requireWorkspace(path)
     const run = await this.runner.run(['branch', '-D', branch], canonical)
@@ -228,7 +226,7 @@ export class GitService {
     return { ok: true, output: run.stdout.trim() }
   }
 
-  /** Delete a remote branch (git push <remote> --delete <name>). */
+  /** 删除远程分支（git push <remote> --delete <name>）。 */
   async deleteRemoteBranch(path: string, branch: string): Promise<OpResult> {
     const canonical = await this.requireWorkspace(path)
     const slash = branch.indexOf('/')
@@ -244,7 +242,7 @@ export class GitService {
     return { ok: true, output: run.stdout.trim() }
   }
 
-  /** Merge a branch into the current branch (git merge --no-edit). */
+  /** 将某分支合入当前分支（git merge --no-edit）。 */
   async mergeBranch(path: string, branch: string): Promise<OpResult> {
     const canonical = await this.requireWorkspace(path)
     const run = await this.runner.run(['merge', '--no-edit', branch], canonical)
@@ -254,7 +252,7 @@ export class GitService {
     return { ok: true, output: run.stdout.trim() }
   }
 
-  /** Commit DAG for the graph view (all refs, date order, capped). */
+  /** 用于图视图的提交 DAG（全部引用，按日期排序，有上限）。 */
   async graph(path: string): Promise<GraphView> {
     const canonical = await this.requireWorkspace(path)
     const [repo, current, logRun, tipRun] = await Promise.all([

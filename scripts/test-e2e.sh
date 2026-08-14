@@ -1,6 +1,6 @@
 #!/bin/bash
-# End-to-end test for the git-panel host service: rebuilds a scratch repo
-# (local bare remote + diverged branches) and runs scripts/test-host.ts.
+# git-panel 宿主服务的端到端测试：重新构建一个临时仓库
+# （本地裸远程仓库 + 分叉分支）并运行 scripts/test-host.ts。
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE=/tmp/gitpanel-test

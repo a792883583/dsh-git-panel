@@ -1,6 +1,6 @@
 /**
- * /git-panel/* route layer: JSON envelope (ok/error) for query and mutation
- * operations. The service owns workspace gating; this layer owns HTTP shape.
+ * /git-panel/* 路由层：为查询和变更操作提供 JSON 封装（ok/error）。
+ * 工作区门禁由服务层负责；本层负责 HTTP 形态。
  * @module dsh-git-panel/host/routes
  */
 
@@ -40,7 +40,7 @@ function json(res: ServerResponse, envelope: Envelope<unknown>, status = 200): v
   res.end(JSON.stringify(envelope))
 }
 
-/** Extract the required string field from a JSON object payload. */
+/** 从 JSON 对象载荷中提取必需的字符串字段。 */
 function field(payload: unknown, key: string): string | null {
   if (typeof payload !== 'object' || payload === null) return null
   const value = (payload as Record<string, unknown>)[key]
@@ -140,7 +140,7 @@ function route(service: GitService) {
   }
 }
 
-/** Register the /git-panel routes. */
+/** 注册 /git-panel 各路由。 */
 export function registerGitPanelRoutes(ctx: Context, service: GitService): () => void {
   return ctx.webServer.register({ kind: 'prefix', path: '/git-panel', handler: route(service) })
 }

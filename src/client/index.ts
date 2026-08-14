@@ -1,8 +1,8 @@
 /**
- * dsh-git-panel — browser half: mounts the git panel column into the web
- * shell's frame grid (right side), binds to the active session's cwd, and
- * drives the /git-panel host routes. Every wiring failure is logged, never
- * thrown — the shell fails the whole boot when a plugin apply throws.
+ * dsh-git-panel —— 浏览器端：将 git 面板列挂载到 web shell 的 frame 网格
+ *（右侧），绑定到当前活动会话的 cwd，并驱动 /git-panel 宿主路由。所有接线
+ * 失败都会记日志而不会抛出——当插件 apply 抛出异常时，shell 会中止整个启动
+ * 流程。
  * @module dsh-git-panel/client
  */
 
@@ -15,11 +15,10 @@ import { initI18n } from './i18n.ts'
 import { GitPanel } from './Panel.tsx'
 
 /**
- * Structural face of the injected client runtime we use. Declared locally
- * instead of importing the SDK's ClientContext: the host-side SDK packages
- * augment the same cordis Context with a different `sessions` shape, which
- * wins when host and client halves compile in one program. The bundle is
- * duck-typed at runtime either way.
+ * 我们使用到的注入式客户端运行时结构。这里在本地声明，而不是导入 SDK 的
+ * ClientContext：宿主侧的 SDK 包会用另一种不同的 `sessions` 结构扩展同一个
+ * cordis Context，当宿主端与客户端在同一程序中一起编译时，后者会胜出。无论
+ * 如何，bundle 在运行时都采用鸭子类型判定。
  */
 interface PanelClientContext {
   effect(fn: () => (() => void) | void, name: string): void
@@ -40,25 +39,24 @@ interface PanelClientContext {
   }
 }
 
-/** Required services: sessions for the project root, locale for copy. */
+/** 必需服务：用于获取项目根目录的 sessions，用于文案的 locale。 */
 export const inject = ['sessions', 'locale']
 
 const HIDDEN_KEY = 'dsh-git-panel.hidden'
 
-/** Apply the browser half. */
+/** 应用浏览器端。 */
 export function apply(ctx: PanelClientContext): void {
-  // Pick up the platform locale (zh/en) + browser language for the copy;
-  // the language face is subscribed once and drives the useT() hook.
+  // 获取平台语言（zh/en）以及浏览器语言用于文案；语言接口只订阅一次，
+  // 并驱动 useT() hook。
   try {
     initI18n(ctx.locale)
   } catch (error) {
     console.error('dsh-git-panel: i18n init failed (falling back to Chinese)', error)
   }
-  // The input-dock branch chip, mounted beside the workspace selector above
-  // the composer (official conversation.input.dock slot, declared in rc.6).
-  // Git-graph-style registration: ctx.inject waits for the services to be
-  // ready, and register() receives a FACTORY for the injected props (the
-  // shell passes the returned object into the component's props).
+  // 输入 dock 处的分支 chip，挂载在工作区选择器旁、提示输入框上方（官方
+  // conversation.input.dock 槽位，rc.6 中声明）。采用 git-graph 式的注册流程：
+  // ctx.inject 会等待服务就绪，register() 接收注入 props 的 FACTORY（shell
+  // 会把返回的对象传入组件的 props）。
   ctx.inject(['slots', 'sessions'], (scope: PanelClientContext) => {
     try {
       scope.slots.inject('conversation.input.dock', () =>
@@ -90,7 +88,7 @@ export function apply(ctx: PanelClientContext): void {
 
     const render = (): void => {
       if (root === null) return
-      // Hidden: unmount the panel tree so no branch data is loaded at all.
+      // 隐藏状态下：卸载面板树，这样就不会加载任何分支数据。
       if (hidden) {
         root.render(null)
         return
@@ -106,7 +104,7 @@ export function apply(ctx: PanelClientContext): void {
       } catch {
         /* noop */
       }
-      // The edge toggle arrow updates its direction and position internally.
+      // 边缘处的切换箭头会自行更新方向与位置。
       column?.setVisible(!next)
       render()
     }
@@ -148,11 +146,11 @@ export function apply(ctx: PanelClientContext): void {
   }, 'dsh-git-panel: mount')
 }
 
-/** Local helper to keep Panel.tsx free of the sessions plumbing. */
+/** 本地辅助函数，让 Panel.tsx 不必与 sessions 管道纠缠。 */
 import { createElement } from 'react'
 function ReactPanel(api: GitPanelApi, path: string): React.ReactElement {
   return createElement(GitPanel, { path, api })
 }
 
-/** Cordis plugin entry — named + default export so the loader always resolves it. */
+/** Cordis 插件入口 —— 同时提供命名与默认导出，确保 loader 总能解析到它。 */
 export default { apply, inject }

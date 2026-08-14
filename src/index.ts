@@ -1,9 +1,9 @@
 /**
- * dsh-git-panel — host half: the workspace-gated git service and its
- * /git-panel/* HTTP routes on the shared webserver. The browser half
- * (exports "./client") is served by client-modules from the same package's
- * dsh.client declaration. Host git mutations are UI-triggered operations on
- * the workspace disk tree, never tool calls.
+ * dsh-git-panel — 宿主侧部分：以工作区为边界约束的 git 服务及其
+ * 在共享 webserver 上的 /git-panel/* HTTP 路由。浏览器侧部分
+ * （导出 "./client"）由同包的 dsh.client 声明通过 client-modules 提供。
+ * 宿主侧的 git 变更是由 UI 触发、作用于工作区磁盘目录树的操作，绝不属于
+ * 工具调用。
  * @module dsh-git-panel
  */
 
@@ -15,10 +15,10 @@ import type {} from '@deepseek-ai/dsh-workspace'
 import { GitService, subprocessRunner, type WorkspaceGate } from './host/git-service.ts'
 import { registerGitPanelRoutes } from './host/routes.ts'
 
-/** Required services: the route registry, the managed subprocess seam, and the workspace registry. */
+/** 所需服务：路由注册表、托管子进程接缝和 workspace 注册表。 */
 export const inject = ['webServer', 'subprocess', 'workspaceRegistry']
 
-/** The workspace-membership gate: canonicalize the path and require it to be a registered workspace. */
+/** 工作区归属门禁：规范化路径并要求它是已注册的 workspace。 */
 function createWorkspaceGate(ctx: Context): WorkspaceGate {
   return async (path) => {
     let canonical: string
@@ -34,11 +34,11 @@ function createWorkspaceGate(ctx: Context): WorkspaceGate {
   }
 }
 
-/** Mount the git service and its routes. */
+/** 挂载 git 服务及其路由。 */
 export function apply(ctx: Context): void {
   const service = new GitService(subprocessRunner(ctx), createWorkspaceGate(ctx))
   ctx.effect(() => registerGitPanelRoutes(ctx, service), 'dsh-git-panel: /git-panel routes')
 }
 
-/** Cordis plugin entry — named + default export so the loader always resolves it. */
+/** Cordis 插件入口——命名导出与默认导出并存，确保加载器总能解析到。 */
 export default { apply, inject }

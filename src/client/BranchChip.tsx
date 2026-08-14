@@ -1,8 +1,7 @@
 /**
- * The input-dock branch chip: shows the current branch above the input box;
- * clicking opens a dropdown of local branches for one-click switching.
- * Mounted via the official `conversation.input.dock` slot (rc.6 declares it),
- * so it renders beside the workspace selector above the composer.
+ * 输入 dock 的分支 chip：在输入框上方显示当前分支；点击会打开一个本地分支
+ * 下拉列表，以便一键切换。通过官方 `conversation.input.dock` 槽位挂载（rc.6
+ * 声明了它），因此它渲染在提示输入框上方的、工作区选择器旁边。
  * @module dsh-git-panel/client/BranchChip
  */
 
@@ -56,7 +55,7 @@ function ensureChipStyle(): void {
   document.head.appendChild(tag)
 }
 
-/** The sessions service face the chip needs (structural; see client/index.ts). */
+/** chip 所需的 sessions 服务结构（参见 client/index.ts）。 */
 interface ChipSessions {
   list: {
     getSnapshot(): { current?: string; byId: Record<string, { cwd?: string }> }
@@ -64,13 +63,13 @@ interface ChipSessions {
 }
 
 interface BranchChipProps {
-  /** Current session id (the dock slot's runtime share). */
+  /** 当前会话 id（dock 槽位的运行时共享）。 */
   sessionId?: string
-  /** The injected sessions service. */
+  /** 注入的 sessions 服务。 */
   sessions?: ChipSessions
 }
 
-/** The input-dock branch selector chip. Renders null outside git workspaces. */
+/** 输入 dock 的分支选择器 chip。在 git 工作区之外渲染为 null。 */
 export function BranchChip(props: BranchChipProps): React.ReactElement | null {
   const { sessionId, sessions } = props
   const t = useT()
@@ -82,13 +81,12 @@ export function BranchChip(props: BranchChipProps): React.ReactElement | null {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const retries = useRef(0)
-  // Monotonic guard for in-flight fetches: a response resolving after the
-  // session changed must not label the wrong repo or fill the dropdown.
+  // 对进行中的请求做单调递增保护：在会话已改变之后才返回的响应，不得给错误
+  // 的仓库打标，也不得填充下拉列表。
   const fetchSeq = useRef(0)
-  // Dynamic popover direction: opens upward when there is not enough room
-  // below the chip (the composer sits near the bottom of the viewport).
-  // Re-measured after content loads (view/error/loading settle) so the flip
-  // decision uses the REAL popover height, not the loading stub.
+  // 弹层方向动态变化：当 chip 下方空间不足时向上展开（提示输入框靠近视口
+  // 底部）。内容加载完成后重新测量（view/error/loading 稳定下来），这样翻转
+  // 决定使用的是真实的弹层高度，而不是加载占位的高度。
   const [openUp, setOpenUp] = useState(false)
   const chipRef = useRef<HTMLButtonElement | null>(null)
   const popRef = useRef<HTMLDivElement | null>(null)
@@ -104,8 +102,8 @@ export function BranchChip(props: BranchChipProps): React.ReactElement | null {
     setOpenUp(opensUp)
     const pop = popRef.current
     if (pop === null) return
-    // Clamp to the ACTUAL available space in the chosen direction so the
-    // list can never extend past the viewport, regardless of timing.
+    // 在所选方向上，把 maxHeight 钳制到实际可用空间，这样无论时机如何，
+    // 列表都不会超出视口。
     const max = opensUp ? Math.max(160, spaceAbove - 12) : Math.max(120, spaceBelow - 12)
     pop.style.maxHeight = `${Math.min(max, 340)}px`
     console.debug('[dsh-git-panel] chip popover', {
@@ -132,8 +130,8 @@ export function BranchChip(props: BranchChipProps): React.ReactElement | null {
     console.debug('[dsh-git-panel] chip mount', { sessionId, hasSessions: !!sessions, cwd })
   }, [sessionId, sessions, cwd])
 
-  // Label: light current-branch probe only. The full branch list is fetched
-  // when the dropdown opens — keeps the boot and session switches cheap.
+  // 标签：只做轻量的当前分支探测。完整的分支列表在弹层打开时才请求——
+  // 让启动与会话切换都更廉价。
   const refetchCurrent = useCallback(async () => {
     if (!cwd) {
       setCurrent(null)
@@ -148,8 +146,8 @@ export function BranchChip(props: BranchChipProps): React.ReactElement | null {
       setCurrent(result.value.current || null)
       setError(null)
     } else {
-      // Keep the last known branch label; retry a hidden chip once so a
-      // transient failure does not leave the selector permanently invisible.
+      // 保留上次已知的分支标签；对隐藏的 chip 重试一次，这样一次暂时性的
+      // 失败不会让选择器永久不可见。
       setError(result.error.message)
       if (current === null && retries.current < 1) {
         retries.current += 1
@@ -158,12 +156,12 @@ export function BranchChip(props: BranchChipProps): React.ReactElement | null {
     }
   }, [cwd, api, current])
 
-  // Initial load + session change (cheap probe only).
+  // 初始加载 + 会话切换（仅做廉价探测）。
   useEffect(() => {
     void refetchCurrent()
   }, [refetchCurrent])
 
-  // Full branch list, fetched fresh every time the popover opens.
+  // 完整的分支列表，每次弹层打开时都重新获取。
   const refetchList = useCallback(async () => {
     if (!cwd) {
       setView(null)
@@ -187,7 +185,7 @@ export function BranchChip(props: BranchChipProps): React.ReactElement | null {
     if (open) void refetchList()
   }, [open, refetchList])
 
-  // Not a git workspace (no session, no repo): hide the chip entirely.
+  // 不是 git 工作区（无会话、无仓库）：完全隐藏 chip。
   if (current === null && !loading) return null
 
   const switchTo = async (branch: string): Promise<void> => {
@@ -202,7 +200,7 @@ export function BranchChip(props: BranchChipProps): React.ReactElement | null {
     if (result.ok) {
       setOpen(false)
       await refetchCurrent()
-      // Let the right-side panel refresh its branch list too.
+      // 也通知右侧面板刷新它的分支列表。
       window.dispatchEvent(new CustomEvent('dsh-git-panel:switched'))
     } else {
       setError(result.error.message)

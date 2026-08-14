@@ -1,8 +1,7 @@
 /**
- * Build script: produces the host half (lib/index.js, ESM) and the browser
- * client bundle (lib/client.js) wrapped in the shell's __ModuleLoader__ load
- * contract. Externals resolve through the loader module table (platform
- * modules) or the host loader, never bundled.
+ * 构建脚本：生成宿主端（lib/index.js，ESM）以及浏览器客户端打包结果
+ * （lib/client.js），后者已按 shell 的 __ModuleLoader__ 加载契约进行封装。
+ * 外部依赖通过加载器的模块表（平台模块）或宿主加载器解析，从不参与打包。
  */
 import { build } from 'esbuild'
 import { mkdirSync } from 'node:fs'
@@ -11,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 
-/** The module specifiers the web shell shares into the frozen module table. */
+/** Web shell 共享到冻结模块表中的模块标识符。 */
 const PLATFORM_MODULES = [
   'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@deepseek-ai/cordis',
   '@deepseek-ai/dsh-client-ui-slots',
@@ -34,7 +33,7 @@ const clientFooter = `    return module.exports;
 mkdirSync(dirname(`${root}/lib/index.js`), { recursive: true })
 
 await Promise.all([
-  // ---- host half: ESM, externals stay external (host loader resolves them)
+  // ---- 宿主端：ESM，外部依赖保持为外部引用（由宿主加载器解析）
   build({
     entryPoints: [`${root}/src/index.ts`],
     outfile: `${root}/lib/index.js`,
@@ -52,7 +51,7 @@ await Promise.all([
     logLevel: 'warning',
   }),
 
-  // ---- browser half: closure factory consumed by window.__ModuleLoader__
+  // ---- 浏览器端：由 window.__ModuleLoader__ 消费的闭包工厂
   build({
     entryPoints: [`${root}/src/client/index.ts`],
     outfile: `${root}/lib/client.js`,
