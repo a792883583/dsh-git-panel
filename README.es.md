@@ -17,6 +17,20 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
 - Sigue el directorio de trabajo de la sesión actual: se reenlaza automáticamente al cambiar de sesión de proyecto
 - Tema claro / oscuro siguiendo la GUI web de DSH
 
+## Capturas de pantalla
+
+**Panel de ramas** (ramas locales/remotas, adelante/detrás, doble clic para cambiar, menú contextual):
+
+![Panel de ramas](docs/branches.png)
+
+**Chip de rama** (cambio rápido de rama encima del cuadro de entrada):
+
+![Chip de rama](docs/chip.png)
+
+**Gráfico de commits** (columnas redimensionables, scroll virtualizado):
+
+![Gráfico de commits](docs/graph.png)
+
 ## Instalación
 
 ```sh

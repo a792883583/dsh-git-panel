@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>dsh-git-panel preview</title>
+<style>
+  body { margin:0; padding:0; background:#ffffff; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; }
+  body[data-view="chip"] #section-chip { display:block; }
+  body[data-view="panel"] #section-panel { display:block; }
+  body[data-view="graph"] #section-graph { display:block; }
+  #section-chip, #section-panel, #section-graph { display:none; }
+
+  /* ===== 分支胶囊（与 BranchChip.tsx 同款样式） ===== */
+  #section-chip { width:560px; padding:18px 16px 12px; }
+  .chip-dock { display:flex; justify-content:flex-start; }
+  .dsh-gpc-chip { display:inline-flex; align-items:center; gap:5px; max-width:220px;
+    padding:3px 10px; font-size:12px; color:#24292f; background:#ffffff;
+    border:1px solid rgba(128,128,128,0.35); border-radius:999px; cursor:pointer;
+    white-space:nowrap; overflow:hidden; }
+  .dsh-gpc-chip .label { overflow:hidden; text-overflow:ellipsis; }
+  .dsh-gpc-chip svg { flex:none; }
+  .composer-box { margin-top:8px; border:1px solid rgba(128,128,128,0.3); border-radius:10px;
+    height:44px; display:flex; align-items:center; padding:0 12px; color:#8b949e; font-size:13px; }
+
+  /* ===== 分支面板（与 Panel.tsx 同款样式） ===== */
+  #section-panel { width:380px; }
+  .dsh-gp { --bg:#ffffff; --fg:#24292f; --muted:#6e7781; --border:rgba(128,128,128,0.25);
+    --accent:#1976d2; --hover:rgba(0,0,0,0.05); --current:#1a7f37; --danger:#cf222e;
+    --panel-bg:#f6f8fa; color:var(--fg); background:var(--bg); font-size:13px;
+    display:flex; flex-direction:column; }
+  .dsh-gp * { box-sizing:border-box; }
+  .dsh-gp-head { display:flex; align-items:center; gap:6px; padding:8px 10px;
+    border-bottom:1px solid var(--border); font-weight:600; }
+  .dsh-gp-head .repo { color:var(--muted); font-weight:400; font-size:11px; }
+  .dsh-gp-head .spacer { flex:1; }
+  .dsh-gp-btn { border:1px solid var(--border); background:transparent; color:var(--fg);
+    border-radius:4px; padding:2px 8px; font-size:11px; cursor:pointer; }
+  .dsh-gp-tabs { display:flex; border-bottom:1px solid var(--border); }
+  .dsh-gp-tab { flex:1; text-align:center; padding:6px 0; cursor:pointer; color:var(--muted); }
+  .dsh-gp-tab.active { color:var(--accent); border-bottom:2px solid var(--accent); font-weight:600; }
+  .dsh-gp-section { padding:8px 10px 4px; color:var(--muted); font-size:12px; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.4px; }
+  .dsh-gp-row { display:flex; align-items:center; gap:6px; padding:7px 10px; cursor:pointer; }
+  .dsh-gp-row:hover { background:var(--hover); }
+  .dsh-gp-row .name { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dsh-gp-row .meta { color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dsh-gp-row .spacer { flex:1; }
+  .dsh-gp-badge { font-size:11px; padding:1px 6px; border-radius:8px; background:var(--panel-bg); color:var(--muted); white-space:nowrap; }
+  .dsh-gp-badge.current { background:var(--current); color:#fff; }
+  .dsh-gp-badge.ahead { color:var(--current); }
+  .dsh-gp-badge.behind { color:var(--accent); }
+  .dsh-gp-actions { padding:8px; }
+
+  /* ===== 图谱（与 Panel.tsx 同款样式） ===== */
+  #section-graph { width:680px; padding:8px; }
+  .graph-wrap { position:relative; }
+  .graph-header { position:relative; width:652px; height:28px; font-size:13px; color:var(--muted); user-select:none; }
+  .graph-header span { position:absolute; top:8px; font-weight:600; }
+  .graph-sep { position:absolute; top:6px; bottom:6px; width:1px; background:rgba(128,128,128,0.25); opacity:0.7; }
+</style>
+</head>
+<body data-view="chip">
+<script>
+  document.body.dataset.view = new URLSearchParams(location.search).get('v') || 'chip'
+</script>
+
+<!-- ================= 分支胶囊 ================= -->
+<section id="section-chip">
+  <div class="chip-dock">
+    <button type="button" class="dsh-gpc-chip" title="切换分支">
+      <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor"
+        strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="4" cy="4" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="12" cy="4" r="1.6" />
+        <path d="M4 5.6v4.8a2.4 2.4 0 0 0 2.4 2.4H12" />
+      </svg>
+      <span class="label">main</span>
+      <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor"
+        strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M4 6l4 4 4-4" />
+      </svg>
+    </button>
+  </div>
+  <div class="composer-box">输入消息，或使用 @ 引用…</div>
+</section>
+
+<!-- ================= 分支面板 ================= -->
+<section id="section-panel">
+  <div class="dsh-gp">
+    <div class="dsh-gp-head">
+      <span>Git 面板</span>
+      <span class="repo">dsh-git-panel</span>
+      <span class="spacer"></span>
+      <button class="dsh-gp-btn">↻</button>
+    </div>
+    <div class="dsh-gp-tabs">
+      <div class="dsh-gp-tab active">分支</div>
+      <div class="dsh-gp-tab">图谱</div>
+    </div>
+
+    <div class="dsh-gp-section">本地分支</div>
+    <div class="dsh-gp-row">
+      <span class="name">main</span>
+      <span class="dsh-gp-badge behind">↓1</span>
+      <span class="dsh-gp-badge current">当前</span>
+      <span class="spacer"></span>
+      <span class="meta">08-12 21:34 Merge pull request #131</span>
+    </div>
+    <div class="dsh-gp-row">
+      <span class="name">feature/login</span>
+      <span class="dsh-gp-badge ahead">↑2</span>
+      <span class="spacer"></span>
+      <span class="meta">08-13 09:12 feat(login): add SSO provider</span>
+    </div>
+    <div class="dsh-gp-row">
+      <span class="name">feature/payments</span>
+      <span class="spacer"></span>
+      <span class="meta">08-11 16:40 wip: refund flow</span>
+    </div>
+    <div class="dsh-gp-row">
+      <span class="name">hotfix/2fa</span>
+      <span class="spacer"></span>
+      <span class="meta">08-13 10:05 hotfix: validate 2FA code</span>
+    </div>
+    <div class="dsh-gp-row">
+      <span class="name">refactor/api</span>
+      <span class="spacer"></span>
+      <span class="meta">08-10 14:22 refactor(api): extract client</span>
+    </div>
+
+    <div class="dsh-gp-section">远程分支</div>
+    <div class="dsh-gp-row">
+      <span class="name">origin/main</span>
+      <span class="spacer"></span>
+      <span class="meta">08-12 21:34 Merge pull request #131</span>
+    </div>
+    <div class="dsh-gp-row">
+      <span class="name">origin/feature/login</span>
+      <span class="spacer"></span>
+      <span class="meta">08-13 09:12 feat(login): add SSO provider</span>
+    </div>
+    <div class="dsh-gp-row">
+      <span class="name">origin/hotfix/2fa</span>
+      <span class="spacer"></span>
+      <span class="meta">08-13 10:05 hotfix: validate 2FA code</span>
+    </div>
+
+    <div class="dsh-gp-actions">
+      <button class="dsh-gp-btn">全部抓取</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 图谱 ================= -->
+<section id="section-graph">
+  <div class="graph-wrap" style="width:652px">
+    <div class="graph-header">
+      <span style="left:10px">线图</span>
+      <div class="graph-sep" style="left:73px"></div>
+      <span style="left:80px">提交</span>
+      <div class="graph-sep" style="left:383px"></div>
+      <span style="left:404px">分支</span>
+    </div>
+    <svg width="652" height="270" style="display:block">
+      <!-- 泳道线条与节点：r0..r9, lane0..lane2 -->
+      <line x1="24" y1="38" x2="24" y2="14" stroke="#1565c0" stroke-width="1.2" opacity="0.85"/>
+      <path d="M 38 38 C 38 50, 24 50, 24 62" fill="none" stroke="#c62828" stroke-width="1.2" opacity="0.85"/>
+      <line x1="24" y1="62" x2="24" y2="86" stroke="#1565c0" stroke-width="1.2" opacity="0.85"/>
+      <line x1="38" y1="38" x2="38" y2="62" stroke="#c62828" stroke-width="1.2" opacity="0.85"/>
+      <path d="M 52 62 C 52 74, 24 74, 24 86" fill="none" stroke="#2e7d32" stroke-width="1.2" opacity="0.85"/>
+      <line x1="24" y1="86" x2="24" y2="110" stroke="#1565c0" stroke-width="1.2" opacity="0.85"/>
+      <line x1="38" y1="62" x2="38" y2="86" stroke="#c62828" stroke-width="1.2" opacity="0.85"/>
+      <line x1="24" y1="110" x2="24" y2="134" stroke="#1565c0" stroke-width="1.2" opacity="0.85"/>
+      <line x1="38" y1="86" x2="38" y2="110" stroke="#c62828" stroke-width="1.2" opacity="0.85"/>
+      <line x1="24" y1="134" x2="24" y2="158" stroke="#1565c0" stroke-width="1.2" opacity="0.85"/>
+      <line x1="38" y1="110" x2="38" y2="134" stroke="#c62828" stroke-width="1.2" opacity="0.85"/>
+      <line x1="24" y1="158" x2="24" y2="182" stroke="#1565c0" stroke-width="1.2" opacity="0.85"/>
+      <line x1="38" y1="134" x2="38" y2="158" stroke="#c62828" stroke-width="1.2" opacity="0.85"/>
+      <line x1="24" y1="182" x2="24" y2="206" stroke="#1565c0" stroke-width="1.2" opacity="0.85"/>
+      <line x1="38" y1="158" x2="38" y2="182" stroke="#c62828" stroke-width="1.2" opacity="0.85"/>
+      <line x1="24" y1="206" x2="24" y2="230" stroke="#1565c0" stroke-width="1.2" opacity="0.85"/>
+      <line x1="38" y1="182" x2="38" y2="206" stroke="#c62828" stroke-width="1.2" opacity="0.85"/>
+
+      <!-- 节点 -->
+      <circle cx="24" cy="14" r="4" fill="#1565c0" stroke="#ffffff" stroke-width="1.5"/>
+      <circle cx="24" cy="38" r="4" fill="#1565c0"/>
+      <circle cx="38" cy="38" r="4" fill="#c62828"/>
+      <circle cx="24" cy="62" r="4" fill="#1565c0"/>
+      <circle cx="38" cy="62" r="4" fill="#c62828"/>
+      <circle cx="52" cy="62" r="4" fill="#2e7d32"/>
+      <circle cx="24" cy="86" r="4" fill="#1565c0"/>
+      <circle cx="38" cy="86" r="4" fill="#c62828"/>
+      <circle cx="24" cy="110" r="4" fill="#1565c0"/>
+      <circle cx="38" cy="110" r="4" fill="#c62828"/>
+      <circle cx="24" cy="134" r="4" fill="#1565c0"/>
+      <circle cx="38" cy="134" r="4" fill="#c62828"/>
+      <circle cx="24" cy="158" r="4" fill="#1565c0"/>
+      <circle cx="38" cy="158" r="4" fill="#c62828"/>
+      <circle cx="24" cy="182" r="4" fill="#1565c0"/>
+      <circle cx="38" cy="182" r="4" fill="#c62828"/>
+      <circle cx="24" cy="206" r="4" fill="#1565c0"/>
+      <circle cx="38" cy="206" r="4" fill="#c62828"/>
+      <circle cx="24" cy="230" r="4" fill="#1565c0"/>
+      <circle cx="38" cy="230" r="4" fill="#c62828"/>
+
+      <!-- 提交文本 -->
+      <text x="80" y="17.5" font-size="12" fill="#24292f">Merge pull request #131 from feature/login</text>
+      <text x="80" y="41.5" font-size="12" fill="#24292f">docs: update API examples</text>
+      <text x="80" y="65.5" font-size="12" fill="#24292f">feat(login): add SSO provider adapter (#129)</text>
+      <text x="80" y="89.5" font-size="12" fill="#24292f">fix(ui): align table headers on narrow screens</text>
+      <text x="80" y="113.5" font-size="12" fill="#24292f">feat(login): remember device checkbox (#127)</text>
+      <text x="80" y="137.5" font-size="12" fill="#24292f">hotfix: validate 2FA code length before submit</text>
+      <text x="80" y="161.5" font-size="12" fill="#24292f">refactor(api): extract client factory</text>
+      <text x="80" y="185.5" font-size="12" fill="#24292f">feat(login): password reset flow (#124)</text>
+      <text x="80" y="209.5" font-size="12" fill="#24292f">chore: pin node 20 in CI</text>
+      <text x="80" y="233.5" font-size="12" fill="#24292f">feat(auth): session refresh interceptor</text>
+
+      <!-- 分支标签（右对齐） -->
+      <text x="648" y="17.5" font-size="11" text-anchor="end" font-weight="700" fill="#1a7f37">main</text>
+      <text x="648" y="65.5" font-size="11" text-anchor="end" fill="#6e7781">feature/login</text>
+      <text x="648" y="137.5" font-size="11" text-anchor="end" fill="#6e7781">hotfix/2fa</text>
+      <text x="648" y="209.5" font-size="11" text-anchor="end" fill="#6e7781">origin/main</text>
+    </svg>
+  </div>
+</section>
+
+</body>
+</html>

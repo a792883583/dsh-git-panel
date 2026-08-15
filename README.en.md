@@ -17,6 +17,20 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
 - Follows the current session's working directory: re-binds automatically when switching project sessions
 - Light / dark theme follows the DSH Web GUI
 
+## Screenshots
+
+**Branch panel** (local/remote branches, ahead/behind, double-click to switch, right-click menu):
+
+![Branch panel](docs/branches.png)
+
+**Branch chip** (quick branch switching above the input box):
+
+![Branch chip](docs/chip.png)
+
+**Commit graph** (resizable three-column layout, virtualized scrolling):
+
+![Commit graph](docs/graph.png)
+
 ## Installation
 
 ```sh
