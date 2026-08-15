@@ -34,14 +34,12 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
 ## Instalación
 
 ```sh
-# Desarrollo local / antes de la publicación en npm
-dsh plugin --profile web add link:/path/to/dsh-git-panel
-
-# Después de publicar en npm
 dsh plugin --profile web add dsh-git-panel
 ```
 
 Reinicia `dsh web`, abre una sesión de proyecto vinculada a un repositorio git y el panel de Git aparece en el lado derecho del chat.
+
+> Para desarrollo local, instala mediante un enlace: `dsh plugin --profile web add link:/path/to/dsh-git-panel`. Tras editar el código, ejecuta `npm run build` y actualiza la página para ver los cambios.
 
 ## Licencia
 
