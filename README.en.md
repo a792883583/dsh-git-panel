@@ -34,43 +34,12 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
 ## Installation
 
 ```sh
-# Local development / before the npm release
-dsh plugin --profile web add link:/path/to/dsh-git-panel
-
-# After publishing to npm
 dsh plugin --profile web add dsh-git-panel
 ```
 
 Restart `dsh web`, open a project session bound to a git repository, and the Git panel appears on the right side of the chat.
 
-## Development
-
-```sh
-npm install
-npm run typecheck     # tsc --noEmit
-npm run build         # esbuild → lib/index.js (host) + lib/client.js (browser)
-npm test              # scripts/test-e2e.sh: end-to-end tests on a scratch repo
-```
-
-### Architecture
-
-- **Host half** (`src/index.ts` / `src/host/`): workspace guard + `ctx.subprocess` running real git commands, exposed as `/git-panel/*` JSON routes through `ctx.webServer.register`. Security boundary: git runs only inside registered workspace roots.
-- **Browser half** (`src/client/`): locates the shell's frame grid via the `[class*="sidebarCol"]` parent (or `[data-dsh-frame]`), appends the right-side column and mirrors grid tracks; React renders the branch list and graph; `i18n.ts` keeps the zh / en / es copy and switches automatically with the platform and browser languages.
-- Build output follows the `window.__ModuleLoader__.load({ id, factory })` closure-factory convention; external modules (react / @deepseek-ai platform modules) come from the loader's module table.
-
-### Routes
-
-| Route | Method | Description |
-|---|---|---|
-| `/git-panel/branches` | POST | Branch view (current / local / remote + ahead / behind) |
-| `/git-panel/graph` | POST | Commit DAG + branch tip mapping |
-| `/git-panel/switch` | POST | Switch branch (remote branches get a local tracking branch) |
-| `/git-panel/pull` | POST | Pull the current branch |
-| `/git-panel/fetch` | POST | Fetch all remotes (prune) |
-| `/git-panel/rename` | POST | Rename a branch |
-| `/git-panel/delete` | POST | Delete a local branch |
-| `/git-panel/delete-remote` | POST | Delete a remote branch |
-| `/git-panel/merge` | POST | Merge a branch into the current branch |
+> For local development, install via a link instead: `dsh plugin --profile web add link:/path/to/dsh-git-panel`. After editing source, run `npm run build` and refresh the page to see changes.
 
 ## License
 

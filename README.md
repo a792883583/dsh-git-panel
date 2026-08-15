@@ -34,43 +34,12 @@ DSH Web GUI 的 Git 面板插件：分支管理（切换 / 拉取 / 抓取 / 重
 ## 安装
 
 ```sh
-# 本地开发 / 未发布 npm 时
-dsh plugin --profile web add link:/path/to/dsh-git-panel
-
-# 发布到 npm 后
 dsh plugin --profile web add dsh-git-panel
 ```
 
 重启 `dsh web`，打开绑定 git 仓库的项目会话，聊天区右侧出现「Git 面板」。
 
-## 开发
-
-```sh
-npm install
-npm run typecheck     # tsc --noEmit
-npm run build         # esbuild → lib/index.js (host) + lib/client.js (browser)
-npm test              # scripts/test-e2e.sh：scratch 仓库端到端测试
-```
-
-### 架构
-
-- **host 半区**（`src/index.ts` / `src/host/`）：workspace 门卫 + `ctx.subprocess` 运行真实 git 命令，经 `ctx.webServer.register` 暴露 `/git-panel/*` JSON 路由。安全边界：只允许在已注册 workspace 根目录执行 git。
-- **browser 半区**（`src/client/`）：通过 `[class*="sidebarCol"]` 父元素（或 `[data-dsh-frame]`）定位壳的 frame 网格，追加右侧列并同步 grid tracks；React 渲染分支列表与图谱；`i18n.ts` 维护中 / 英 / 西三语文案，跟随平台语言与浏览器语言自动切换。
-- 构建产物遵循 `window.__ModuleLoader__.load({ id, factory })` 闭包工厂约定；外部模块（react / @deepseek-ai 平台模块）走加载器模块表。
-
-### 路由
-
-| 路由 | 方法 | 说明 |
-|---|---|---|
-| `/git-panel/branches` | POST | 分支视图（current / local / remote + ahead / behind） |
-| `/git-panel/graph` | POST | 提交 DAG + 分支 tip 映射 |
-| `/git-panel/switch` | POST | 切换分支（远程分支自动建本地跟踪分支） |
-| `/git-panel/pull` | POST | 拉取当前分支 |
-| `/git-panel/fetch` | POST | 抓取全部远程（prune） |
-| `/git-panel/rename` | POST | 重命名分支 |
-| `/git-panel/delete` | POST | 删除本地分支 |
-| `/git-panel/delete-remote` | POST | 删除远程分支 |
-| `/git-panel/merge` | POST | 合并分支至当前分支 |
+> 本地开发时可用 `dsh plugin --profile web add link:/path/to/dsh-git-panel` 以链接方式安装，修改源码后 `npm run build` 并刷新页面即可生效。
 
 ## License
 

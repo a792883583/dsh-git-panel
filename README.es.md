@@ -43,35 +43,6 @@ dsh plugin --profile web add dsh-git-panel
 
 Reinicia `dsh web`, abre una sesión de proyecto vinculada a un repositorio git y el panel de Git aparece en el lado derecho del chat.
 
-## Desarrollo
-
-```sh
-npm install
-npm run typecheck     # tsc --noEmit
-npm run build         # esbuild → lib/index.js (host) + lib/client.js (browser)
-npm test              # scripts/test-e2e.sh: pruebas de extremo a extremo en un repo temporal
-```
-
-### Arquitectura
-
-- **Mitad host** (`src/index.ts` / `src/host/`): guardia de workspace + `ctx.subprocess` ejecutando comandos git reales, expuestos como rutas JSON `/git-panel/*` a través de `ctx.webServer.register`. Límite de seguridad: git solo se ejecuta dentro de raíces de workspace registradas.
-- **Mitad navegador** (`src/client/`): localiza la cuadrícula del frame del shell a través del padre de `[class*="sidebarCol"]` (o `[data-dsh-frame]`), añade la columna derecha y sincroniza los tracks de la cuadrícula; React renderiza la lista de ramas y el gráfico; `i18n.ts` mantiene el texto en zh / en / es y cambia automáticamente con los idiomas de la plataforma y del navegador.
-- La salida de build sigue la convención de fábrica de cierre `window.__ModuleLoader__.load({ id, factory })`; los módulos externos (react / módulos de plataforma @deepseek-ai) provienen de la tabla de módulos del cargador.
-
-### Rutas
-
-| Ruta | Método | Descripción |
-|---|---|---|
-| `/git-panel/branches` | POST | Vista de ramas (actual / locales / remotas + adelante / detrás) |
-| `/git-panel/graph` | POST | DAG de commits + mapeo de puntas de rama |
-| `/git-panel/switch` | POST | Cambiar de rama (las remotas crean rama de seguimiento local) |
-| `/git-panel/pull` | POST | Traer cambios de la rama actual |
-| `/git-panel/fetch` | POST | Obtener todos los remotos (prune) |
-| `/git-panel/rename` | POST | Renombrar una rama |
-| `/git-panel/delete` | POST | Eliminar una rama local |
-| `/git-panel/delete-remote` | POST | Eliminar una rama remota |
-| `/git-panel/merge` | POST | Fusionar una rama en la rama actual |
-
 ## Licencia
 
 MIT
