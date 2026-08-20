@@ -1,6 +1,6 @@
 {
   "name": "dsh-git-panel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DSH web GUI git panel: local/remote branches with ahead/behind, one-click branch switch / pull / fetch, and a GitLens-style commit graph.",
   "license": "MIT",
   "author": "Jaden Tang <jaden.tang@sjfood.com>",
@@ -60,12 +60,12 @@
     "test": "bash scripts/test-e2e.sh"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-client-locale": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-host-webserver": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-subprocess": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-workspace": "^0.1.0-rc.6",
-    "react": "^18.2.0"
+    "@deepseek-ai/dsh-client-locale": ">=0.1.0-rc.6 <0.3.0",
+    "@deepseek-ai/dsh-client-runtime": ">=0.1.0-rc.6 <0.3.0",
+    "@deepseek-ai/dsh-host-webserver": ">=0.1.0-rc.6 <0.3.0",
+    "@deepseek-ai/dsh-subprocess": ">=0.1.0-rc.6 <0.3.0",
+    "@deepseek-ai/dsh-workspace": ">=0.1.0-rc.6 <0.3.0",
+    "react": ">=16.8.0 <20.0.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
