@@ -170,6 +170,8 @@ export function mountPanelColumn(
   let hiddenState = false
   const toggle = document.createElement('button')
   toggle.type = 'button'
+  // 供其他插件（如 dsh-chat-toc）定位：目录条停靠在箭头左侧。
+  toggle.dataset.gitPanelToggle = ''
   toggle.setAttribute('aria-label', 'Toggle git panel')
   // 普通的 chevron 箭头；折叠状态下旋转 180°。
   toggle.innerHTML =
