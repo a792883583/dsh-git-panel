@@ -13,6 +13,11 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
   - One-click **pull** of the current branch, **fetch all** (`git fetch --all --prune`)
 - **Branch chip** (above the input box): shows the current branch; click to open a local-branch list for quick switching
 - **Git graph**: commit DAG lanes, three-column header (Lanes / Commit / Branch), the commit column is resizable from both sides (width persisted), click a node for commit details; virtualized rendering — only the visible viewport is drawn, so large repositories scroll smoothly
+- **Write bar** (top of the panel, under the tabs):
+  - **Commit**: type a message and press Enter → `git add -A && git commit -m`
+  - **Push**: one-click `git push` of the current branch
+  - **Stash / pop**: `git stash push` (optional message) / `git stash pop`
+  - **Status**: shows the number of changed files (`git status --porcelain`)
 - **Multilingual**: follows the DSH Web UI language (Chinese / English); Spanish browsers automatically get Spanish copy; defaults to Simplified Chinese
 - Follows the current session's working directory: re-binds automatically when switching project sessions
 - Light / dark theme follows the DSH Web GUI

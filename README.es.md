@@ -13,6 +13,11 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
   - **Traer cambios** de la rama actual con un clic, **obtener todo** (`git fetch --all --prune`)
 - **Chip de rama** (encima del cuadro de entrada): muestra la rama actual; haz clic para abrir la lista de ramas locales y cambiar rápidamente
 - **Gráfico de Git**: carriles del DAG de commits, encabezado de tres columnas (Carriles / Commit / Rama); la columna de commits se puede redimensionar desde ambos lados (ancho persistente); haz clic en un nodo para ver los detalles del commit; renderizado virtualizado — solo se dibuja el área visible, por lo que los repositorios grandes se desplazan con fluidez
+- **Barra de escritura** (parte superior del panel, bajo las pestañas):
+  - **Confirmar (commit)**: escriba un mensaje y pulse Enter → `git add -A && git commit -m`
+  - **Empujar (push)**: `git push` de la rama actual con un clic
+  - **Guardar / recuperar (stash)**: `git stash push` (mensaje opcional) / `git stash pop`
+  - **Estado**: muestra el número de archivos modificados (`git status --porcelain`)
 - **Multilingüe**: sigue el idioma de la interfaz web de DSH (chino / inglés); los navegadores en español reciben automáticamente el texto en español; por defecto chino simplificado
 - Sigue el directorio de trabajo de la sesión actual: se reenlaza automáticamente al cambiar de sesión de proyecto
 - Tema claro / oscuro siguiendo la GUI web de DSH
