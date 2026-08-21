@@ -65,6 +65,15 @@ const STYLE = `
 .dsh-gp-menu-input:focus { border-color:var(--accent); }
 .dsh-gp-menu-actions { display:flex; gap:6px; padding:2px 2px 4px; }
 .dsh-gp-menu-actions .dsh-gp-btn { flex:1; }
+.dsh-gp-write { display:flex; flex-direction:column; gap:6px; padding:6px 8px; border-bottom:1px solid var(--border); }
+.dsh-gp-write-row { display:flex; gap:6px; align-items:center; }
+.dsh-gp-write .dsh-gp-btn { flex:none; }
+.dsh-gp-input { flex:1; min-width:0; padding:4px 8px; font-size:12px; color:var(--fg);
+  background:var(--panel-bg); border:1px solid var(--border); border-radius:6px; outline:none; }
+.dsh-gp-input:focus { border-color:var(--current); }
+.dsh-gp-write-status { flex:1; min-width:0; font-size:11px; color:var(--muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dsh-gp-write-stash { font-size:11px; color:var(--muted); white-space:pre-wrap; word-break:break-all; }
 .dsh-gp-empty { padding:20px 10px; text-align:center; color:var(--muted); }
 .dsh-gp-warn { flex:1; display:flex; align-items:center; justify-content:center;
   padding:24px; text-align:center; color:#9a6700; font-size:12px; line-height:1.7; }
@@ -530,6 +539,10 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
   } | null>(null)
   const [menuMode, setMenuMode] = useState<'main' | 'rename' | 'confirm-delete'>('main')
   const [renameValue, setRenameValue] = useState('')
+  // 写操作：提交信息、变更状态、暂存列表。
+  const [commitMsg, setCommitMsg] = useState('')
+  const [statusText, setStatusText] = useState('')
+  const [stashText, setStashText] = useState('')
 
   ensureStyle()
 
@@ -555,6 +568,46 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
   useEffect(() => {
     void load()
   }, [load])
+
+  // ---- 写操作（commit / push / stash） ----
+  const refreshStatus = useCallback(async (): Promise<void> => {
+    if (!path) return
+    const result = await api.status(path)
+    setStatusText(result.ok ? result.value.output : '')
+  }, [path, api])
+
+  useEffect(() => {
+    void refreshStatus()
+  }, [refreshStatus])
+
+  const runWrite = useCallback(async (action: 'commit' | 'push' | 'stash-push' | 'stash-pop', extra?: string): Promise<void> => {
+    if (!path || busy) return
+    setBusy(true)
+    setMessage(null)
+    let result: { ok: boolean; output?: string; error?: { code: string; message: string } }
+    try {
+      if (action === 'commit') {
+        result = await api.commit(path, extra ?? commitMsg)
+      } else if (action === 'push') {
+        result = await api.push(path)
+      } else if (action === 'stash-push') {
+        result = await api.stashPush(path, extra)
+      } else {
+        result = await api.stashPop(path)
+      }
+    } catch (error) {
+      result = { ok: false, error: { code: 'internal', message: error instanceof Error ? error.message : String(error) } }
+    }
+    setBusy(false)
+    if (result.ok) {
+      setMessage({ text: result.output ?? t('op.ok'), kind: 'ok' })
+      if (action === 'commit' || action === 'stash-pop') setCommitMsg('')
+      void refreshStatus()
+      void load()
+    } else {
+      setMessage({ text: result.error?.message ?? t('op.failed'), kind: 'err' })
+    }
+  }, [path, api, busy, commitMsg, t, refreshStatus, load])
 
   // 输入 dock 的 chip 会在一次成功的分支切换后派发这个事件。
   useEffect(() => {
@@ -668,11 +721,38 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
         <span>{t('panel.title')}</span>
         <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: 11 }}>{repoName}</span>
         <span className="spacer" />
-        <button className="dsh-gp-btn" disabled={loading || busy} onClick={() => void load()}>↻</button>
+        <button className="dsh-gp-btn" disabled={loading || busy} onClick={() => void load()} title={t('op.refresh')}>
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor"
+            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 1.5v3h-3" />
+          </svg>
+        </button>
       </div>
       <div className="dsh-gp-tabs">
         <div className={`dsh-gp-tab${tab === 'branches' ? ' active' : ''}`} onClick={() => setTab('branches')}>{t('tab.branches')}</div>
         <div className={`dsh-gp-tab${tab === 'graph' ? ' active' : ''}`} onClick={() => setTab('graph')}>{t('tab.graph')}</div>
+      </div>
+      <div className="dsh-gp-write">
+        <div className="dsh-gp-write-row">
+          <input className="dsh-gp-input" value={commitMsg} placeholder={t('write.commit.placeholder')}
+            onChange={(event) => setCommitMsg(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && commitMsg.trim() !== '') void runWrite('commit')
+            }} />
+          <button className="dsh-gp-btn" disabled={busy || commitMsg.trim() === ''}
+            onClick={() => void runWrite('commit')}>{t('write.commit')}</button>
+          <button className="dsh-gp-btn" disabled={busy}
+            onClick={() => void runWrite('push')}>{t('write.push')}</button>
+        </div>
+        <div className="dsh-gp-write-row">
+          <button className="dsh-gp-btn" disabled={busy}
+            onClick={() => void runWrite('stash-push')}>{t('write.stash')}</button>
+          <button className="dsh-gp-btn" disabled={busy}
+            onClick={() => void runWrite('stash-pop')}>{t('write.stashPop')}</button>
+          <button className="dsh-gp-btn" disabled={busy} onClick={() => void refreshStatus()}>{t('write.status')}</button>
+          <span className="dsh-gp-write-status" title={statusText}>{statusText.split('\n')[0] ?? ''}</span>
+        </div>
+        {stashText !== '' ? <div className="dsh-gp-write-stash">{stashText}</div> : null}
       </div>
       <div className="dsh-gp-body">
         {loading && !branches && !graph ? <div className="dsh-gp-empty">{t('loading')}</div> : null}

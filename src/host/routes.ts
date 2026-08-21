@@ -129,6 +129,39 @@ function route(service: GitService) {
           json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
           return
         }
+        case '/git-panel/status': {
+          const value = await service.status(root)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/commit': {
+          const message = field(payload, 'message')
+          if (message === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.commit(root, message)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/push': {
+          const value = await service.push(root)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/stash-list': {
+          const value = await service.stashList(root)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/stash-push': {
+          const message = field(payload, 'message')
+          const value = await service.stashPush(root, message ?? undefined)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/stash-pop': {
+          const value = await service.stashPop(root)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
         default:
           json(res, { ok: false, error: { code: 'internal', message: `unknown route ${path}` } }, 404)
       }

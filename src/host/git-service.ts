@@ -252,6 +252,78 @@ export class GitService {
     return { ok: true, output: run.stdout.trim() }
   }
 
+  /** 工作区状态摘要：变更文件列表（git status --porcelain）。 */
+  async status(path: string): Promise<{ ok: boolean; output: string; error?: { code: string; message: string } }> {
+    const canonical = await this.requireWorkspace(path)
+    const run = await this.runner.run(['status', '--porcelain'], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: '', error: { code: 'status-failed', message: run.stderr.trim() || 'git status failed' } }
+    }
+    const lines = run.stdout.split('\n').filter((l) => l.trim() !== '')
+    // 精简：状态码 + 路径（中文路径保留）。
+    const output = lines.map((l) => l.replace(/^(\S+)\s+(.+)$/, '$1  $2')).join('\n')
+    return { ok: true, output }
+  }
+
+  /** 提交全部变更（git add -A + git commit -m）。 */
+  async commit(path: string, message: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const clean = message.trim()
+    if (clean === '') {
+      return { ok: false, output: '', error: { code: 'empty-message', message: 'commit message 不能为空' } }
+    }
+    const addRun = await this.runner.run(['add', '-A'], canonical)
+    if (addRun.exitCode !== 0) {
+      return { ok: false, output: addRun.stdout, error: { code: 'add-failed', message: addRun.stderr.trim() || 'git add failed' } }
+    }
+    const commitRun = await this.runner.run(['commit', '-m', clean], canonical)
+    if (commitRun.exitCode !== 0) {
+      return { ok: false, output: commitRun.stdout, error: { code: 'commit-failed', message: commitRun.stderr.trim() || 'git commit failed' } }
+    }
+    return { ok: true, output: commitRun.stdout.trim() }
+  }
+
+  /** 推送当前分支到上游（git push）。 */
+  async push(path: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const run = await this.runner.run(['push'], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: run.stdout, error: { code: 'push-failed', message: run.stderr.trim() || 'git push failed' } }
+    }
+    return { ok: true, output: run.stdout.trim() }
+  }
+
+  /** 暂存列表（git stash list）。 */
+  async stashList(path: string): Promise<{ ok: boolean; output: string; error?: { code: string; message: string } }> {
+    const canonical = await this.requireWorkspace(path)
+    const run = await this.runner.run(['stash', 'list'], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: '', error: { code: 'stash-list-failed', message: run.stderr.trim() || 'git stash list failed' } }
+    }
+    return { ok: true, output: run.stdout.trim() }
+  }
+
+  /** 暂存当前变更（git stash push -m）。 */
+  async stashPush(path: string, message?: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const argv = message !== undefined && message.trim() !== '' ? ['stash', 'push', '-m', message.trim()] : ['stash', 'push']
+    const run = await this.runner.run(argv, canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: run.stdout, error: { code: 'stash-failed', message: run.stderr.trim() || 'git stash push failed' } }
+    }
+    return { ok: true, output: run.stdout.trim() }
+  }
+
+  /** 恢复最新暂存（git stash pop）。 */
+  async stashPop(path: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const run = await this.runner.run(['stash', 'pop'], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: run.stdout, error: { code: 'stash-pop-failed', message: run.stderr.trim() || 'git stash pop failed' } }
+    }
+    return { ok: true, output: run.stdout.trim() }
+  }
+
   /** 用于图视图的提交 DAG（全部引用，按日期排序，有上限）。 */
   async graph(path: string): Promise<GraphView> {
     const canonical = await this.requireWorkspace(path)

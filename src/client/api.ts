@@ -68,4 +68,28 @@ export class GitPanelApi {
   mergeBranch(path: string, branch: string) {
     return post<OpResult>('/git-panel/merge', { path, branch })
   }
+
+  status(path: string) {
+    return post<OpResult>('/git-panel/status', { path })
+  }
+
+  commit(path: string, message: string) {
+    return post<OpResult>('/git-panel/commit', { path, message })
+  }
+
+  push(path: string) {
+    return post<OpResult>('/git-panel/push', { path })
+  }
+
+  stashList(path: string) {
+    return post<OpResult>('/git-panel/stash-list', { path })
+  }
+
+  stashPush(path: string, message?: string) {
+    return post<OpResult>('/git-panel/stash-push', { path, message: message ?? '' })
+  }
+
+  stashPop(path: string) {
+    return post<OpResult>('/git-panel/stash-pop', { path })
+  }
 }
