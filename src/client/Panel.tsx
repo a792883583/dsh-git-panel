@@ -74,6 +74,22 @@ const STYLE = `
 .dsh-gp-write-status { flex:1; min-width:0; font-size:11px; color:var(--muted);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dsh-gp-write-stash { font-size:11px; color:var(--muted); white-space:pre-wrap; word-break:break-all; }
+.dsh-gp-detail-actions { display:flex; gap:6px; margin-top:6px; }
+.dsh-gp-detail-actions .dsh-gp-btn { font-size:11px; padding:2px 8px; }
+.dsh-gp-changes { border-top:1px solid var(--border); padding:6px 8px; display:flex; flex-direction:column; gap:4px; }
+.dsh-gp-changes-head { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); font-weight:600; }
+.dsh-gp-changes-list { display:flex; flex-direction:column; gap:2px; max-height:120px; overflow-y:auto; }
+.dsh-gp-changes-item { display:flex; align-items:center; gap:6px; padding:3px 6px; border-radius:5px;
+  font-size:11px; color:var(--fg); cursor:pointer; min-width:0; }
+.dsh-gp-changes-item:hover { background:var(--hover); }
+.dsh-gp-changes-code { flex:none; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px;
+  color:var(--current); width:24px; }
+.dsh-gp-changes-file { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dsh-gp-changes-diff { border:1px solid var(--border); border-radius:6px; margin-top:4px; overflow:hidden; }
+.dsh-gp-changes-diff .dsh-gp-changes-head { padding:4px 6px; background:var(--panel-bg); }
+.dsh-gp-changes-pre { max-height:220px; overflow:auto; font-size:11px; line-height:1.5; padding:6px;
+  white-space:pre; color:var(--fg); margin:0; }
+.dsh-gp-changes-empty { padding:8px; font-size:11px; color:var(--muted); }
 .dsh-gp-empty { padding:20px 10px; text-align:center; color:var(--muted); }
 .dsh-gp-warn { flex:1; display:flex; align-items:center; justify-content:center;
   padding:24px; text-align:center; color:#9a6700; font-size:12px; line-height:1.7; }
@@ -345,8 +361,8 @@ const GraphSvg = memo(function GraphSvg(props: {
 })
 
 /** 提交图谱标签页（memoized：其 props 只在加载/缩放时变化）。 */
-const GraphViewComponent = memo(function GraphViewComponent(props: { graph: GraphView; width: number }): React.ReactElement {
-  const { graph, width } = props
+const GraphViewComponent = memo(function GraphViewComponent(props: { graph: GraphView; width: number; onCherryPick?: (sha: string) => void; onRevert?: (sha: string) => void }): React.ReactElement {
+  const { graph, width, onCherryPick, onRevert } = props
   const t = useT()
   const [selected, setSelected] = useState<LayoutCommit | null>(null)
   const layout = useMemo(() => layoutGraph(graph.commits), [graph])
@@ -510,6 +526,16 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
         <div className="dsh-gp-detail">
           <div><b>{selected.subject}</b></div>
           <div>{selected.sha} · {selected.author} · {selected.date}</div>
+          {onCherryPick !== undefined || onRevert !== undefined ? (
+            <div className="dsh-gp-detail-actions">
+              {onCherryPick !== undefined ? (
+                <button type="button" className="dsh-gp-btn" onClick={() => onCherryPick(selected.sha)}>{t('op.cherryPick')}</button>
+              ) : null}
+              {onRevert !== undefined ? (
+                <button type="button" className="dsh-gp-btn" onClick={() => onRevert(selected.sha)}>{t('op.revert')}</button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -543,6 +569,9 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
   const [commitMsg, setCommitMsg] = useState('')
   const [statusText, setStatusText] = useState('')
   const [stashText, setStashText] = useState('')
+  // 变更文件列表 + 选中的文件 diff。
+  const [changes, setChanges] = useState<Array<{ code: string; file: string }>>([])
+  const [diffState, setDiffState] = useState<{ file: string; content: string; busy: boolean } | null>(null)
 
   ensureStyle()
 
@@ -573,7 +602,23 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
   const refreshStatus = useCallback(async (): Promise<void> => {
     if (!path) return
     const result = await api.status(path)
-    setStatusText(result.ok ? result.value.output : '')
+    const output = result.ok ? result.value.output : ''
+    setStatusText(output)
+    // 解析 porcelain 行：状态码 + 路径。
+    const list: Array<{ code: string; file: string }> = []
+    for (const line of output.split('\n')) {
+      const m = line.match(/^(\S+)\s+(.+)$/)
+      if (m !== null) list.push({ code: m[1], file: m[2] })
+    }
+    setChanges(list)
+  }, [path, api])
+
+  /** 加载某文件的 diff。 */
+  const loadDiff = useCallback(async (file: string): Promise<void> => {
+    if (!path) return
+    setDiffState({ file, content: '', busy: true })
+    const result = await api.diffFile(path, file)
+    setDiffState({ file, content: result.ok ? result.value.output : result.error?.message ?? '', busy: false })
   }, [path, api])
 
   useEffect(() => {
@@ -753,6 +798,38 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
           <span className="dsh-gp-write-status" title={statusText}>{statusText.split('\n')[0] ?? ''}</span>
         </div>
         {stashText !== '' ? <div className="dsh-gp-write-stash">{stashText}</div> : null}
+        {changes.length > 0 ? (
+          <div className="dsh-gp-changes">
+            <div className="dsh-gp-changes-head">{t('changes.title')} ({changes.length})</div>
+            <div className="dsh-gp-changes-list">
+              {changes.map((c) => (
+                <div key={c.file} className="dsh-gp-changes-item"
+                  onClick={() => void loadDiff(c.file)}>
+                  <span className="dsh-gp-changes-code">{c.code}</span>
+                  <span className="dsh-gp-changes-file">{c.file}</span>
+                </div>
+              ))}
+            </div>
+            {diffState !== null ? (
+              <div className="dsh-gp-changes-diff">
+                <div className="dsh-gp-changes-head">
+                  <span>{t('changes.diff')}: {diffState.file}</span>
+                  <button type="button" className="dsh-gp-btn"
+                    onClick={() => setDiffState(null)} style={{ marginLeft: 'auto', fontSize: 11, padding: '0 6px' }}>
+                    ✕
+                  </button>
+                </div>
+                {diffState.busy ? (
+                  <div className="dsh-gp-changes-empty">…</div>
+                ) : diffState.content === '' ? (
+                  <div className="dsh-gp-changes-empty">{t('changes.empty')}</div>
+                ) : (
+                  <pre className="dsh-gp-changes-pre">{diffState.content.slice(0, 20000)}</pre>
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <div className="dsh-gp-body">
         {loading && !branches && !graph ? <div className="dsh-gp-empty">{t('loading')}</div> : null}
@@ -798,7 +875,12 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
         ) : null}
 
         {tab === 'graph' && graph ? (
-          <GraphViewComponent graph={graph} width={width} />
+          <GraphViewComponent
+            graph={graph}
+            width={width}
+            onCherryPick={(sha) => void runOp(t('op.cherryPick'), () => api.cherryPick(path, sha))}
+            onRevert={(sha) => void runOp(t('op.revert'), () => api.revertCommit(path, sha))}
+          />
         ) : null}
       </div>
 

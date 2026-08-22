@@ -162,6 +162,27 @@ function route(service: GitService) {
           json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
           return
         }
+        case '/git-panel/diff': {
+          const file = field(payload, 'file')
+          if (file === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.diffFile(root, file)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/cherry-pick': {
+          const sha = field(payload, 'sha')
+          if (sha === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.cherryPick(root, sha)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/revert': {
+          const sha = field(payload, 'sha')
+          if (sha === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.revertCommit(root, sha)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
         default:
           json(res, { ok: false, error: { code: 'internal', message: `unknown route ${path}` } }, 404)
       }

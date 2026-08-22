@@ -73,6 +73,18 @@ export class GitPanelApi {
     return post<OpResult>('/git-panel/status', { path })
   }
 
+  diffFile(path: string, file: string) {
+    return post<OpResult>('/git-panel/diff', { path, file })
+  }
+
+  cherryPick(path: string, sha: string) {
+    return post<OpResult>('/git-panel/cherry-pick', { path, sha })
+  }
+
+  revertCommit(path: string, sha: string) {
+    return post<OpResult>('/git-panel/revert', { path, sha })
+  }
+
   commit(path: string, message: string) {
     return post<OpResult>('/git-panel/commit', { path, message })
   }

@@ -265,6 +265,44 @@ export class GitService {
     return { ok: true, output }
   }
 
+  /** 单个文件的变更 diff（已暂存 + 未暂存，git diff HEAD -- <file>）。 */
+  async diffFile(path: string, file: string): Promise<{ ok: boolean; output: string; error?: { code: string; message: string } }> {
+    const canonical = await this.requireWorkspace(path)
+    const name = file.trim()
+    if (name === '' || name.startsWith('/') || name === '..' || name.includes('/../')) {
+      return { ok: false, output: '', error: { code: 'invalid-file', message: '非法文件路径' } }
+    }
+    const run = await this.runner.run(['diff', 'HEAD', '--', name], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: '', error: { code: 'diff-failed', message: run.stderr.trim() || 'git diff failed' } }
+    }
+    return { ok: true, output: run.stdout }
+  }
+
+  /** 摘取一个提交到当前分支（git cherry-pick）。 */
+  async cherryPick(path: string, sha: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const clean = sha.trim()
+    if (clean === '') return { ok: false, output: '', error: { code: 'empty-sha', message: 'sha 不能为空' } }
+    const run = await this.runner.run(['cherry-pick', clean], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: run.stdout, error: { code: 'cherry-pick-failed', message: run.stderr.trim() || 'git cherry-pick failed' } }
+    }
+    return { ok: true, output: run.stdout.trim() }
+  }
+
+  /** 撤销一个提交（git revert --no-edit）。 */
+  async revertCommit(path: string, sha: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const clean = sha.trim()
+    if (clean === '') return { ok: false, output: '', error: { code: 'empty-sha', message: 'sha 不能为空' } }
+    const run = await this.runner.run(['revert', '--no-edit', clean], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: run.stdout, error: { code: 'revert-failed', message: run.stderr.trim() || 'git revert failed' } }
+    }
+    return { ok: true, output: run.stdout.trim() }
+  }
+
   /** 提交全部变更（git add -A + git commit -m）。 */
   async commit(path: string, message: string): Promise<OpResult> {
     const canonical = await this.requireWorkspace(path)

@@ -18,6 +18,8 @@ DSH Web GUI 的 Git 面板插件：分支管理（切换 / 拉取 / 抓取 / 重
   - **推送**：一键 `git push` 当前分支
   - **暂存 / 恢复暂存**：`git stash push`（可带说明）/ `git stash pop`
   - **状态**：显示当前工作区变更文件数（`git status --porcelain`）
+- **变更文件 + diff**：写操作条下方列出未提交的变更文件（状态码 + 路径），点击任意文件查看与 HEAD 的完整 diff——提交前先过一眼改了什么
+- **图谱提交操作**：点击图谱中的提交节点，可一键 **cherry-pick 到当前分支** 或 **撤销该提交**（`git revert --no-edit`）
 - **多语言**：自动跟随 DSH Web 界面语言（中文 / 英文），西班牙语浏览器自动切换西班牙语，默认简体中文
 - 跟随当前会话工作目录：切换项目会话自动重新绑定
 - 明暗主题跟随 DSH Web GUI
@@ -45,6 +47,10 @@ dsh plugin --profile web add dsh-git-panel
 重启 `dsh web`，打开绑定 git 仓库的项目会话，聊天区右侧出现「Git 面板」。
 
 > 本地开发时可用 `dsh plugin --profile web add link:/path/to/dsh-git-panel` 以链接方式安装，修改源码后 `npm run build` 并刷新页面即可生效。
+
+## 反馈
+
+使用中遇到问题或有功能建议？欢迎到 [GitHub Issues](https://github.com/a792883583/dsh-git-panel/issues) 反馈，帮助我们把插件做得更好。
 
 ## License
 

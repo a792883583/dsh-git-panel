@@ -18,6 +18,8 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
   - **Push**: one-click `git push` of the current branch
   - **Stash / pop**: `git stash push` (optional message) / `git stash pop`
   - **Status**: shows the number of changed files (`git status --porcelain`)
+- **Changes + diff**: uncommitted changed files are listed under the write bar (status code + path); click any file to view its full diff against HEAD — glance at what changed before committing
+- **Graph commit actions**: click a commit node in the graph to **cherry-pick it onto the current branch** or **revert it** (`git revert --no-edit`)
 - **Multilingual**: follows the DSH Web UI language (Chinese / English); Spanish browsers automatically get Spanish copy; defaults to Simplified Chinese
 - Follows the current session's working directory: re-binds automatically when switching project sessions
 - Light / dark theme follows the DSH Web GUI
@@ -45,6 +47,10 @@ dsh plugin --profile web add dsh-git-panel
 Restart `dsh web`, open a project session bound to a git repository, and the Git panel appears on the right side of the chat.
 
 > For local development, install via a link instead: `dsh plugin --profile web add link:/path/to/dsh-git-panel`. After editing source, run `npm run build` and refresh the page to see changes.
+
+## Feedback
+
+Found a bug or have a feature request? Open an issue on [GitHub Issues](https://github.com/a792883583/dsh-git-panel/issues) — your feedback helps us make the plugin better.
 
 ## License
 
