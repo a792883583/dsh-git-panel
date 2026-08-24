@@ -48,6 +48,10 @@ Reinicia `dsh web`, abre una sesión de proyecto vinculada a un repositorio git 
 
 > Para desarrollo local, instala mediante un enlace: `dsh plugin --profile web add link:/path/to/dsh-git-panel`. Tras editar el código, ejecuta `npm run build` y actualiza la página para ver los cambios.
 
+## Comentarios
+
+¿Encontró un error o tiene una sugerencia? Abra un issue en [GitHub Issues](https://github.com/a792883583/dsh-git-panel/issues) — sus comentarios nos ayudan a mejorar el plugin.
+
 ## Licencia
 
 MIT
