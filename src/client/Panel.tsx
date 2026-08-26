@@ -95,8 +95,12 @@ const STYLE = `
 .dsh-gp-changes-file { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dsh-gp-changes-diff { border:1px solid var(--border); border-radius:6px; margin-top:4px; overflow:hidden; }
 .dsh-gp-changes-diff .dsh-gp-changes-head { padding:4px 6px; background:var(--panel-bg); }
-.dsh-gp-changes-pre { max-height:220px; overflow:auto; font-size:11px; line-height:1.5; padding:6px;
-  white-space:pre; color:var(--fg); margin:0; }
+.dsh-gp-changes-pre { max-height:240px; overflow:auto; font-size:11px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  line-height:1.5; padding:4px 0; margin:0; background:var(--bg); }
+.dsh-gp-diff-line { padding:0 6px; white-space:pre-wrap; word-break:break-all; }
+.dsh-gp-diff-line.add { background:rgba(46,160,67,0.15); color:var(--current); }
+.dsh-gp-diff-line.del { background:rgba(248,81,73,0.15); color:var(--danger); }
+.dsh-gp-diff-line.hunk { background:rgba(56,139,253,0.15); color:var(--accent); font-weight:600; }
 .dsh-gp-changes-empty { padding:8px; font-size:11px; color:var(--muted); }
 .dsh-gp-empty { padding:20px 10px; text-align:center; color:var(--muted); }
 .dsh-gp-warn { flex:1; display:flex; align-items:center; justify-content:center;
@@ -841,7 +845,22 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
                 ) : diffState.content === '' ? (
                   <div className="dsh-gp-changes-empty">{t('changes.empty')}</div>
                 ) : (
-                  <pre className="dsh-gp-changes-pre">{diffState.content.slice(0, 20000)}</pre>
+                  <div className="dsh-gp-changes-pre">
+                    {diffState.content.slice(0, 30000).split('\n').map((line, idx) => {
+                      const kind = line.startsWith('+') && !line.startsWith('+++')
+                        ? 'add'
+                        : line.startsWith('-') && !line.startsWith('---')
+                          ? 'del'
+                          : line.startsWith('@@')
+                            ? 'hunk'
+                            : ''
+                      return (
+                        <div key={idx} className={`dsh-gp-diff-line ${kind}`}>
+                          {line || ' '}
+                        </div>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
             ) : null}
