@@ -7,9 +7,11 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
 ## Features
 
 - **Branch panel** (right side of the chat):
+  - **Two-row card layout**: branch names take the full top row without being truncated, while commit timestamps and messages sit on a dedicated second row
+  - **Instant search & filter**: quick search box at the top of the branch list to filter branches and commit messages in real time
   - Local branches: current branch highlighted, `↑ahead / ↓behind` against upstream, **double-click to switch** (double-click the current branch to pull)
   - Remote branches: **double-click to check out** (creates a local tracking branch automatically)
-  - Right-click menu: **rename / delete / merge into current branch** (remote branches get delete-remote instead)
+  - Right-click menu: **copy branch name / rename / delete / merge into current branch** (remote branches get delete-remote instead)
   - One-click **pull** of the current branch, **fetch all** (`git fetch --all --prune`)
 - **Branch chip** (above the input box): shows the current branch; click to open a local-branch list for quick switching
 - **Git graph**: commit DAG lanes, three-column header (Lanes / Commit / Branch), the commit column is resizable from both sides (width persisted), click a node for commit details; virtualized rendering — only the visible viewport is drawn, so large repositories scroll smoothly

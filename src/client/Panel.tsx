@@ -38,11 +38,19 @@ const STYLE = `
 .dsh-gp-body { flex:1; overflow:auto; padding:4px 0; }
 .dsh-gp-section { padding:8px 10px 4px; color:var(--muted); font-size:12px; font-weight:600;
   text-transform:uppercase; letter-spacing:0.4px; }
-.dsh-gp-row { display:flex; align-items:center; gap:6px; padding:7px 10px; cursor:pointer; }
+.dsh-gp-branch-search { width:calc(100% - 16px); margin:4px 8px 4px; padding:4px 8px; font-size:12px;
+  color:var(--fg); background:var(--panel-bg); border:1px solid var(--border); border-radius:6px; outline:none; box-sizing:border-box; }
+.dsh-gp-branch-search:focus { border-color:var(--accent); }
+.dsh-gp-row { display:flex; flex-direction:column; gap:2px; padding:6px 10px; cursor:pointer;
+  border-radius:6px; margin:1px 4px; transition:background 0.1s ease; }
 .dsh-gp-row:hover { background:var(--hover); }
-.dsh-gp-row .name { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.dsh-gp-row .meta { color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.dsh-gp-row .spacer { flex:1; }
+.dsh-gp-row-top { display:flex; align-items:center; gap:6px; min-width:0; }
+.dsh-gp-row-top .name { font-weight:600; font-size:12.5px; color:var(--fg); white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; }
+.dsh-gp-row-top .badges { display:flex; align-items:center; gap:4px; flex:none; }
+.dsh-gp-row-bottom { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); min-width:0; }
+.dsh-gp-row-bottom .commit-msg { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; }
+.dsh-gp-row-bottom .commit-date { flex:none; opacity:0.85; font-variant-numeric:tabular-nums; }
 .dsh-gp-badge { font-size:11px; padding:1px 6px; border-radius:8px; background:var(--panel-bg); color:var(--muted); white-space:nowrap; }
 .dsh-gp-badge.current { background:var(--current); color:#fff; }
 .dsh-gp-badge.ahead { color:var(--current); }
@@ -112,7 +120,7 @@ function ensureStyle(): void {
   document.head.appendChild(tag)
 }
 
-/** GitLens 风格的分支行：双击激活，右键打开菜单。 */
+/** GitLens 风格的分支行（双行信息分层）：双击激活，右键打开菜单。 */
 const BranchRowView = memo(function BranchRowView(props: {
   row: BranchRow
   isRemote: boolean
@@ -129,10 +137,12 @@ const BranchRowView = memo(function BranchRowView(props: {
     !isRemote && row.behind ? <span key="b" className="dsh-gp-badge behind">↓{row.behind}</span> : null,
     isCurrent ? <span key="c" className="dsh-gp-badge current">{t('badge.current')}</span> : null,
   ]
+  const dateText = row.date ? row.date.slice(5, 16).replace('T', ' ') : ''
+  const commitFull = `${row.subject ?? ''}${dateText ? ` (${dateText})` : ''}`
   return (
     <div
       className="dsh-gp-row"
-      title={isRemote ? t('row.title.checkout') : isCurrent ? t('row.title.pull') : t('row.title.switch')}
+      title={`${row.name}\n${commitFull}`}
       onDoubleClick={() => {
         if (busy) return
         onActivate(row.name)
@@ -142,11 +152,16 @@ const BranchRowView = memo(function BranchRowView(props: {
         onContextMenu(event, row, isRemote)
       }}
     >
-      <span className="name">{row.name}</span>
-      {badges}
-      <span className="meta">
-        {row.date ? row.date.slice(5, 16).replace('T', ' ') : ''} {row.subject}
-      </span>
+      <div className="dsh-gp-row-top">
+        <span className="name" title={row.name}>{row.name}</span>
+        {badges.some(Boolean) ? <div className="badges">{badges}</div> : null}
+      </div>
+      {row.subject || dateText ? (
+        <div className="dsh-gp-row-bottom" title={commitFull}>
+          <span className="commit-msg">{row.subject || '—'}</span>
+          {dateText ? <span className="commit-date">{dateText}</span> : null}
+        </div>
+      ) : null}
     </div>
   )
 })
@@ -572,6 +587,8 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
   // 变更文件列表 + 选中的文件 diff。
   const [changes, setChanges] = useState<Array<{ code: string; file: string }>>([])
   const [diffState, setDiffState] = useState<{ file: string; content: string; busy: boolean } | null>(null)
+  // 分支名快速搜索过滤。
+  const [branchSearch, setBranchSearch] = useState('')
 
   ensureStyle()
 
@@ -840,32 +857,48 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
 
         {tab === 'branches' && branches ? (
           <>
-            <div className="dsh-gp-section">{t('section.local')}</div>
-            {branches.local.length === 0 ? <div className="dsh-gp-empty">{t('empty.local')}</div> : null}
-            {branches.local.map((row) => (
-              <BranchRowView
-                key={row.name}
-                row={row}
-                isRemote={false}
-                current={branches.current}
-                busy={busy}
-                onActivate={activateLocal}
-                onContextMenu={openMenu}
-              />
-            ))}
-            <div className="dsh-gp-section">{t('section.remote')}</div>
-            {branches.remote.length === 0 ? <div className="dsh-gp-empty">{t('empty.remote')}</div> : null}
-            {branches.remote.map((row) => (
-              <BranchRowView
-                key={row.name}
-                row={row}
-                isRemote
-                current={branches.current}
-                busy={busy}
-                onActivate={activateRemote}
-                onContextMenu={openMenu}
-              />
-            ))}
+            <input
+              className="dsh-gp-branch-search"
+              value={branchSearch}
+              placeholder={t('branches.search')}
+              onChange={(e) => setBranchSearch(e.target.value)}
+            />
+            {(() => {
+              const q = branchSearch.trim().toLowerCase()
+              const match = (name: string): boolean => q === '' || name.toLowerCase().includes(q)
+              const localFiltered = branches.local.filter((r) => match(r.name) || (r.subject && r.subject.toLowerCase().includes(q)))
+              const remoteFiltered = branches.remote.filter((r) => match(r.name) || (r.subject && r.subject.toLowerCase().includes(q)))
+              return (
+                <>
+                  <div className="dsh-gp-section">{t('section.local')} ({localFiltered.length})</div>
+                  {localFiltered.length === 0 ? <div className="dsh-gp-empty">{t('empty.local')}</div> : null}
+                  {localFiltered.map((row) => (
+                    <BranchRowView
+                      key={row.name}
+                      row={row}
+                      isRemote={false}
+                      current={branches.current}
+                      busy={busy}
+                      onActivate={activateLocal}
+                      onContextMenu={openMenu}
+                    />
+                  ))}
+                  <div className="dsh-gp-section">{t('section.remote')} ({remoteFiltered.length})</div>
+                  {remoteFiltered.length === 0 ? <div className="dsh-gp-empty">{t('empty.remote')}</div> : null}
+                  {remoteFiltered.map((row) => (
+                    <BranchRowView
+                      key={row.name}
+                      row={row}
+                      isRemote
+                      current={branches.current}
+                      busy={busy}
+                      onActivate={activateRemote}
+                      onContextMenu={openMenu}
+                    />
+                  ))}
+                </>
+              )
+            })()}
             <div style={{ padding: 8 }}>
               <button className="dsh-gp-btn" disabled={busy} onClick={() => void runOp(t('fetch.all'), () => api.fetchAll(path))}>
                 {t('fetch.all')}
@@ -922,6 +955,13 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
               </>
             ) : (
               <>
+                <div className="dsh-gp-menu-item" onClick={() => {
+                  if (navigator?.clipboard?.writeText) {
+                    void navigator.clipboard.writeText(menu.row.name)
+                    setMessage({ text: `${t('menu.copyName.done')}: ${menu.row.name}`, kind: 'ok' })
+                  }
+                  closeMenu()
+                }}>{t('menu.copyName')}</div>
                 <div className="dsh-gp-menu-item" onClick={() => setMenuMode('rename')}>{t('menu.rename')}</div>
                 {!menu.isCurrent && !menu.isRemote ? (
                   <div className="dsh-gp-menu-item danger" onClick={() => setMenuMode('confirm-delete')}>{t('menu.delete')}</div>

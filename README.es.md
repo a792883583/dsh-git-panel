@@ -7,9 +7,11 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
 ## Características
 
 - **Panel de ramas** (lado derecho del chat):
+  - **Diseño de tarjeta en dos filas**: los nombres de rama ocupan la fila superior completa sin truncarse, y la información del commit se sitúa en una segunda fila dedicada
+  - **Búsqueda y filtrado rápido**: cuadro de búsqueda en la parte superior para filtrar ramas y mensajes de commit en tiempo real
   - Ramas locales: rama actual resaltada, `↑adelante / ↓detrás` respecto a la rama remota, **doble clic para cambiar** (doble clic en la rama actual para traer cambios)
   - Ramas remotas: **doble clic para cambiar a** (crea automáticamente una rama de seguimiento local)
-  - Menú contextual: **renombrar / eliminar / fusionar en la rama actual** (las ramas remotas ofrecen eliminar rama remota)
+  - Menú contextual: **copiar nombre de rama / renombrar / eliminar / fusionar en la rama actual** (las ramas remotas ofrecen eliminar rama remota)
   - **Traer cambios** de la rama actual con un clic, **obtener todo** (`git fetch --all --prune`)
 - **Chip de rama** (encima del cuadro de entrada): muestra la rama actual; haz clic para abrir la lista de ramas locales y cambiar rápidamente
 - **Gráfico de Git**: carriles del DAG de commits, encabezado de tres columnas (Carriles / Commit / Rama); la columna de commits se puede redimensionar desde ambos lados (ancho persistente); haz clic en un nodo para ver los detalles del commit; renderizado virtualizado — solo se dibuja el área visible, por lo que los repositorios grandes se desplazan con fluidez
