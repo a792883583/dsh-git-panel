@@ -84,15 +84,23 @@ const STYLE = `
 .dsh-gp-write-stash { font-size:11px; color:var(--muted); white-space:pre-wrap; word-break:break-all; }
 .dsh-gp-detail-actions { display:flex; gap:6px; margin-top:6px; }
 .dsh-gp-detail-actions .dsh-gp-btn { font-size:11px; padding:2px 8px; }
-.dsh-gp-changes { border-top:1px solid var(--border); padding:6px 8px; display:flex; flex-direction:column; gap:4px; }
-.dsh-gp-changes-head { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); font-weight:600; }
-.dsh-gp-changes-list { display:flex; flex-direction:column; gap:2px; max-height:120px; overflow-y:auto; }
-.dsh-gp-changes-item { display:flex; align-items:center; gap:6px; padding:3px 6px; border-radius:5px;
+.dsh-gp-changes { border-top:1px solid var(--border); padding:6px 8px; display:flex; flex-direction:column; gap:6px; }
+.dsh-gp-conflict-banner { background:rgba(210,153,34,0.15); border:1px solid rgba(210,153,34,0.4);
+  color:#d29922; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:600; display:flex; align-items:center; gap:4px; }
+[data-ds-dark-theme] .dsh-gp-conflict-banner { color:#e3b341; border-color:rgba(227,179,65,0.4); }
+.dsh-gp-changes-group { display:flex; flex-direction:column; gap:2px; }
+.dsh-gp-changes-group-head { font-size:10.5px; color:var(--muted); font-weight:600; padding:2px 4px; display:flex; justify-content:space-between; }
+.dsh-gp-changes-list { display:flex; flex-direction:column; gap:2px; max-height:140px; overflow-y:auto; }
+.dsh-gp-changes-item { display:flex; align-items:center; gap:4px; padding:3px 6px; border-radius:5px;
   font-size:11px; color:var(--fg); cursor:pointer; min-width:0; }
 .dsh-gp-changes-item:hover { background:var(--hover); }
 .dsh-gp-changes-code { flex:none; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px;
-  color:var(--current); width:24px; }
+  color:var(--current); width:20px; font-weight:600; }
+.dsh-gp-changes-code.conflict { color:var(--danger); }
 .dsh-gp-changes-file { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dsh-gp-file-act { opacity:0; padding:0 3px; font-size:11px; border:none; background:transparent; color:var(--muted); cursor:pointer; border-radius:3px; }
+.dsh-gp-changes-item:hover .dsh-gp-file-act { opacity:1; }
+.dsh-gp-file-act:hover { background:var(--border); color:var(--fg); }
 .dsh-gp-changes-diff { border:1px solid var(--border); border-radius:6px; margin-top:4px; overflow:hidden; }
 .dsh-gp-changes-diff .dsh-gp-changes-head { padding:4px 6px; background:var(--panel-bg); }
 .dsh-gp-changes-pre { max-height:240px; overflow:auto; font-size:11px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -646,7 +654,7 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
     void refreshStatus()
   }, [refreshStatus])
 
-  const runWrite = useCallback(async (action: 'commit' | 'push' | 'stash-push' | 'stash-pop', extra?: string): Promise<void> => {
+  const runWrite = useCallback(async (action: 'commit' | 'push' | 'stash-push' | 'stash-pop' | 'stage' | 'unstage' | 'discard', extra?: string): Promise<void> => {
     if (!path || busy) return
     setBusy(true)
     setMessage(null)
@@ -658,8 +666,15 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
         result = await api.push(path)
       } else if (action === 'stash-push') {
         result = await api.stashPush(path, extra)
-      } else {
+      } else if (action === 'stash-pop') {
         result = await api.stashPop(path)
+      } else if (action === 'stage') {
+        result = await api.stageFile(path, extra ?? '')
+      } else if (action === 'unstage') {
+        result = await api.unstageFile(path, extra ?? '')
+      } else {
+        const [file, untracked] = (extra ?? '').split('|')
+        result = await api.discardFile(path, file, untracked === 'untracked')
       }
     } catch (error) {
       result = { ok: false, error: { code: 'internal', message: error instanceof Error ? error.message : String(error) } }
@@ -819,53 +834,115 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
           <span className="dsh-gp-write-status" title={statusText}>{statusText.split('\n')[0] ?? ''}</span>
         </div>
         {stashText !== '' ? <div className="dsh-gp-write-stash">{stashText}</div> : null}
-        {changes.length > 0 ? (
-          <div className="dsh-gp-changes">
-            <div className="dsh-gp-changes-head">{t('changes.title')} ({changes.length})</div>
-            <div className="dsh-gp-changes-list">
-              {changes.map((c) => (
-                <div key={c.file} className="dsh-gp-changes-item"
-                  onClick={() => void loadDiff(c.file)}>
-                  <span className="dsh-gp-changes-code">{c.code}</span>
-                  <span className="dsh-gp-changes-file">{c.file}</span>
+        {(() => {
+          if (changes.length === 0) return null
+          const conflicts = changes.filter((c) => c.code === 'UU' || c.code === 'AA' || c.code === 'UD' || c.code === 'DU')
+          const staged = changes.filter((c) => c.code[0] !== ' ' && c.code[0] !== '?' && !conflicts.includes(c))
+          const unstaged = changes.filter((c) => (c.code[1] !== ' ' || c.code === '??') && !conflicts.includes(c))
+
+          return (
+            <div className="dsh-gp-changes">
+              {conflicts.length > 0 ? (
+                <div className="dsh-gp-conflict-banner">
+                  ⚠️ {t('changes.conflicts', { count: String(conflicts.length) })}
                 </div>
-              ))}
-            </div>
-            {diffState !== null ? (
-              <div className="dsh-gp-changes-diff">
-                <div className="dsh-gp-changes-head">
-                  <span>{t('changes.diff')}: {diffState.file}</span>
-                  <button type="button" className="dsh-gp-btn"
-                    onClick={() => setDiffState(null)} style={{ marginLeft: 'auto', fontSize: 11, padding: '0 6px' }}>
-                    ✕
-                  </button>
-                </div>
-                {diffState.busy ? (
-                  <div className="dsh-gp-changes-empty">…</div>
-                ) : diffState.content === '' ? (
-                  <div className="dsh-gp-changes-empty">{t('changes.empty')}</div>
-                ) : (
-                  <div className="dsh-gp-changes-pre">
-                    {diffState.content.slice(0, 30000).split('\n').map((line, idx) => {
-                      const kind = line.startsWith('+') && !line.startsWith('+++')
-                        ? 'add'
-                        : line.startsWith('-') && !line.startsWith('---')
-                          ? 'del'
-                          : line.startsWith('@@')
-                            ? 'hunk'
-                            : ''
-                      return (
-                        <div key={idx} className={`dsh-gp-diff-line ${kind}`}>
-                          {line || ' '}
-                        </div>
-                      )
-                    })}
+              ) : null}
+
+              {conflicts.length > 0 ? (
+                <div className="dsh-gp-changes-group">
+                  <div className="dsh-gp-changes-group-head" style={{ color: 'var(--danger)' }}>
+                    <span>{t('changes.conflictsGroup')} ({conflicts.length})</span>
                   </div>
-                )}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+                  <div className="dsh-gp-changes-list">
+                    {conflicts.map((c) => (
+                      <div key={c.file} className="dsh-gp-changes-item" onClick={() => void loadDiff(c.file)}>
+                        <span className="dsh-gp-changes-code conflict">{c.code}</span>
+                        <span className="dsh-gp-changes-file" title={c.file}>{c.file}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {staged.length > 0 ? (
+                <div className="dsh-gp-changes-group">
+                  <div className="dsh-gp-changes-group-head">
+                    <span>{t('changes.staged')} ({staged.length})</span>
+                  </div>
+                  <div className="dsh-gp-changes-list">
+                    {staged.map((c) => (
+                      <div key={c.file} className="dsh-gp-changes-item" onClick={() => void loadDiff(c.file)}>
+                        <span className="dsh-gp-changes-code">{c.code}</span>
+                        <span className="dsh-gp-changes-file" title={c.file}>{c.file}</span>
+                        <button type="button" className="dsh-gp-file-act" title={t('changes.unstage')}
+                          onClick={(e) => { e.stopPropagation(); void runWrite('unstage' as any, c.file) }}>−</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {unstaged.length > 0 ? (
+                <div className="dsh-gp-changes-group">
+                  <div className="dsh-gp-changes-group-head">
+                    <span>{t('changes.unstaged')} ({unstaged.length})</span>
+                  </div>
+                  <div className="dsh-gp-changes-list">
+                    {unstaged.map((c) => (
+                      <div key={c.file} className="dsh-gp-changes-item" onClick={() => void loadDiff(c.file)}>
+                        <span className="dsh-gp-changes-code">{c.code}</span>
+                        <span className="dsh-gp-changes-file" title={c.file}>{c.file}</span>
+                        <button type="button" className="dsh-gp-file-act" title={t('changes.stage')}
+                          onClick={(e) => { e.stopPropagation(); void runWrite('stage' as any, c.file) }}>+</button>
+                        <button type="button" className="dsh-gp-file-act" title={t('changes.discard')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (window.confirm(t('changes.discardConfirm', { file: c.file }))) {
+                              void runWrite('discard' as any, `${c.file}|${c.code === '??' ? 'untracked' : ''}`)
+                            }
+                          }}>↩</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {diffState !== null ? (
+                <div className="dsh-gp-changes-diff">
+                  <div className="dsh-gp-changes-head">
+                    <span>{t('changes.diff')}: {diffState.file}</span>
+                    <button type="button" className="dsh-gp-btn"
+                      onClick={() => setDiffState(null)} style={{ marginLeft: 'auto', fontSize: 11, padding: '0 6px' }}>
+                      ✕
+                    </button>
+                  </div>
+                  {diffState.busy ? (
+                    <div className="dsh-gp-changes-empty">…</div>
+                  ) : diffState.content === '' ? (
+                    <div className="dsh-gp-changes-empty">{t('changes.empty')}</div>
+                  ) : (
+                    <div className="dsh-gp-changes-pre">
+                      {diffState.content.slice(0, 30000).split('\n').map((line, idx) => {
+                        const kind = line.startsWith('+') && !line.startsWith('+++')
+                          ? 'add'
+                          : line.startsWith('-') && !line.startsWith('---')
+                            ? 'del'
+                            : line.startsWith('@@')
+                              ? 'hunk'
+                              : ''
+                        return (
+                          <div key={idx} className={`dsh-gp-diff-line ${kind}`}>
+                            {line || ' '}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          )
+        })()}
       </div>
       <div className="dsh-gp-body">
         {loading && !branches && !graph ? <div className="dsh-gp-empty">{t('loading')}</div> : null}

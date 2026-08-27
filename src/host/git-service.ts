@@ -265,6 +265,49 @@ export class GitService {
     return { ok: true, output }
   }
 
+  /** 单个文件暂存（git add -- <file>）。 */
+  async stageFile(path: string, file: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const name = file.trim()
+    if (name === '' || name.startsWith('/') || name === '..' || name.includes('/../')) {
+      return { ok: false, output: '', error: { code: 'invalid-file', message: '非法文件路径' } }
+    }
+    const run = await this.runner.run(['add', '--', name], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: run.stdout, error: { code: 'stage-failed', message: run.stderr.trim() || 'git add failed' } }
+    }
+    return { ok: true, output: run.stdout.trim() }
+  }
+
+  /** 取消单个文件暂存（git reset HEAD -- <file> 或 git restore --staged -- <file>）。 */
+  async unstageFile(path: string, file: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const name = file.trim()
+    if (name === '' || name.startsWith('/') || name === '..' || name.includes('/../')) {
+      return { ok: false, output: '', error: { code: 'invalid-file', message: '非法文件路径' } }
+    }
+    const run = await this.runner.run(['reset', 'HEAD', '--', name], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: run.stdout, error: { code: 'unstage-failed', message: run.stderr.trim() || 'git reset failed' } }
+    }
+    return { ok: true, output: run.stdout.trim() }
+  }
+
+  /** 放弃工作区未暂存修改（git checkout -- <file> 或 git clean for untracked）。 */
+  async discardFile(path: string, file: string, untracked: boolean): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const name = file.trim()
+    if (name === '' || name.startsWith('/') || name === '..' || name.includes('/../')) {
+      return { ok: false, output: '', error: { code: 'invalid-file', message: '非法文件路径' } }
+    }
+    const argv = untracked ? ['clean', '-fd', '--', name] : ['checkout', '--', name]
+    const run = await this.runner.run(argv, canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: run.stdout, error: { code: 'discard-failed', message: run.stderr.trim() || 'discard failed' } }
+    }
+    return { ok: true, output: run.stdout.trim() }
+  }
+
   /** 单个文件的变更 diff（已暂存 + 未暂存，git diff HEAD -- <file>）。 */
   async diffFile(path: string, file: string): Promise<{ ok: boolean; output: string; error?: { code: string; message: string } }> {
     const canonical = await this.requireWorkspace(path)

@@ -77,6 +77,18 @@ export class GitPanelApi {
     return post<OpResult>('/git-panel/diff', { path, file })
   }
 
+  stageFile(path: string, file: string) {
+    return post<OpResult>('/git-panel/stage', { path, file })
+  }
+
+  unstageFile(path: string, file: string) {
+    return post<OpResult>('/git-panel/unstage', { path, file })
+  }
+
+  discardFile(path: string, file: string, untracked: boolean) {
+    return post<OpResult>('/git-panel/discard', { path, file, untracked })
+  }
+
   cherryPick(path: string, sha: string) {
     return post<OpResult>('/git-panel/cherry-pick', { path, sha })
   }

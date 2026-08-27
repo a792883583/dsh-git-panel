@@ -169,6 +169,28 @@ function route(service: GitService) {
           json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
           return
         }
+        case '/git-panel/stage': {
+          const file = field(payload, 'file')
+          if (file === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.stageFile(root, file)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/unstage': {
+          const file = field(payload, 'file')
+          if (file === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.unstageFile(root, file)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/discard': {
+          const file = field(payload, 'file')
+          const untracked = (payload as Record<string, unknown>).untracked === true
+          if (file === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.discardFile(root, file, untracked)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
         case '/git-panel/cherry-pick': {
           const sha = field(payload, 'sha')
           if (sha === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
