@@ -105,7 +105,9 @@ const STYLE = `
 .dsh-gp-changes-diff .dsh-gp-changes-head { padding:4px 6px; background:var(--panel-bg); }
 .dsh-gp-changes-pre { max-height:240px; overflow:auto; font-size:11px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
   line-height:1.5; padding:4px 0; margin:0; background:var(--bg); }
-.dsh-gp-diff-line { padding:0 6px; white-space:pre-wrap; word-break:break-all; }
+.dsh-gp-diff-line { padding:0 6px; white-space:pre-wrap; word-break:break-all; display:flex; gap:8px; }
+.dsh-gp-diff-line-num { width:28px; text-align:right; color:var(--muted); opacity:0.6; flex:none; user-select:none; font-variant-numeric:tabular-nums; }
+.dsh-gp-diff-line-text { flex:1; min-width:0; }
 .dsh-gp-diff-line.add { background:rgba(46,160,67,0.15); color:var(--current); }
 .dsh-gp-diff-line.del { background:rgba(248,81,73,0.15); color:var(--danger); }
 .dsh-gp-diff-line.hunk { background:rgba(56,139,253,0.15); color:var(--accent); font-weight:600; }
@@ -824,6 +826,8 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
             onClick={() => void runWrite('commit')}>{t('write.commit')}</button>
           <button className="dsh-gp-btn" disabled={busy}
             onClick={() => void runWrite('push')}>{t('write.push')}</button>
+          <button className="dsh-gp-btn" disabled={busy}
+            onClick={() => void runWrite('sync' as any)}>{t('write.sync')}</button>
         </div>
         <div className="dsh-gp-write-row">
           <button className="dsh-gp-btn" disabled={busy}
@@ -922,20 +926,38 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
                     <div className="dsh-gp-changes-empty">{t('changes.empty')}</div>
                   ) : (
                     <div className="dsh-gp-changes-pre">
-                      {diffState.content.slice(0, 30000).split('\n').map((line, idx) => {
-                        const kind = line.startsWith('+') && !line.startsWith('+++')
-                          ? 'add'
-                          : line.startsWith('-') && !line.startsWith('---')
-                            ? 'del'
-                            : line.startsWith('@@')
-                              ? 'hunk'
-                              : ''
-                        return (
-                          <div key={idx} className={`dsh-gp-diff-line ${kind}`}>
-                            {line || ' '}
-                          </div>
-                        )
-                      })}
+                      {(() => {
+                        let oldNum = 0
+                        let newNum = 0
+                        return diffState.content.slice(0, 30000).split('\n').map((line, idx) => {
+                          let kind = ''
+                          let numStr = ''
+                          if (line.startsWith('@@')) {
+                            kind = 'hunk'
+                            const m = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/)
+                            if (m) {
+                              oldNum = parseInt(m[1], 10)
+                              newNum = parseInt(m[2], 10)
+                            }
+                            numStr = '@@'
+                          } else if (line.startsWith('+') && !line.startsWith('+++')) {
+                            kind = 'add'
+                            numStr = String(newNum++)
+                          } else if (line.startsWith('-') && !line.startsWith('---')) {
+                            kind = 'del'
+                            numStr = String(oldNum++)
+                          } else if (line.startsWith(' ') || line === '') {
+                            numStr = String(newNum++)
+                            oldNum++
+                          }
+                          return (
+                            <div key={idx} className={`dsh-gp-diff-line ${kind}`}>
+                              <span className="dsh-gp-diff-line-num">{numStr}</span>
+                              <span className="dsh-gp-diff-line-text">{line || ' '}</span>
+                            </div>
+                          )
+                        })
+                      })()}
                     </div>
                   )}
                 </div>

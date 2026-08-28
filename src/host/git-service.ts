@@ -346,6 +346,21 @@ export class GitService {
     return { ok: true, output: run.stdout.trim() }
   }
 
+  /** 一键同步（git pull --rebase + 有超前则 git push）。 */
+  async sync(path: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const pullRun = await this.runner.run(['pull', '--rebase'], canonical)
+    if (pullRun.exitCode !== 0) {
+      return { ok: false, output: pullRun.stdout, error: { code: 'sync-pull-failed', message: pullRun.stderr.trim() || 'git pull --rebase failed' } }
+    }
+    const pushRun = await this.runner.run(['push'], canonical)
+    if (pushRun.exitCode !== 0) {
+      return { ok: false, output: pushRun.stdout, error: { code: 'sync-push-failed', message: pushRun.stderr.trim() || 'git push failed' } }
+    }
+    const out = [pullRun.stdout.trim(), pushRun.stdout.trim()].filter(Boolean).join('\n')
+    return { ok: true, output: out || 'Sync successful' }
+  }
+
   /** 提交全部变更（git add -A + git commit -m）。 */
   async commit(path: string, message: string): Promise<OpResult> {
     const canonical = await this.requireWorkspace(path)

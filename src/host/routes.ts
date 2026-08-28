@@ -146,6 +146,11 @@ function route(service: GitService) {
           json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
           return
         }
+        case '/git-panel/sync': {
+          const value = await service.sync(root)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
         case '/git-panel/stash-list': {
           const value = await service.stashList(root)
           json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })

@@ -105,6 +105,10 @@ export class GitPanelApi {
     return post<OpResult>('/git-panel/push', { path })
   }
 
+  sync(path: string) {
+    return post<OpResult>('/git-panel/sync', { path })
+  }
+
   stashList(path: string) {
     return post<OpResult>('/git-panel/stash-list', { path })
   }
