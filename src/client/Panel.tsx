@@ -134,6 +134,29 @@ function ensureStyle(): void {
   document.head.appendChild(tag)
 }
 
+/** 将文本安全追加/填入当前会话的输入框（支持 React 受控组件） */
+function injectTextToChatInput(text: string): boolean {
+  const ta = document.querySelector<HTMLTextAreaElement>('textarea[data-phase], [data-composer-card] textarea, textarea')
+  if (!ta) return false
+  const proto = Object.getPrototypeOf(ta)
+  const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set ||
+                       Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+  const cur = ta.value || ''
+  const next = cur ? `${cur}\n\n${text}` : text
+  if (nativeSetter) {
+    nativeSetter.call(ta, next)
+  } else {
+    ta.value = next
+  }
+  ta.dispatchEvent(new Event('input', { bubbles: true }))
+  ta.dispatchEvent(new Event('change', { bubbles: true }))
+  ta.focus()
+  // 滚动到输入框光标末尾
+  ta.selectionStart = ta.value.length
+  ta.selectionEnd = ta.value.length
+  return true
+}
+
 /** GitLens 风格的分支行（双行信息分层）：双击激活，右键打开菜单。 */
 const BranchRowView = memo(function BranchRowView(props: {
   row: BranchRow
@@ -846,6 +869,21 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
 
           return (
             <div className="dsh-gp-changes">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0 4px', fontSize: 11, color: 'var(--muted)' }}>
+                <span>{t('changes.title')} ({changes.length})</span>
+                <button type="button" className="dsh-gp-btn"
+                  title={t('changes.sendToChat')}
+                  style={{ fontSize: 11, padding: '1px 6px' }}
+                  onClick={() => {
+                    const fileLines = changes.map(c => `- \`${c.code}\` ${c.file}`).join('\n')
+                    const prompt = `当前 Git 工作区有以下 ${changes.length} 处变更：\n${fileLines}\n\n请帮我检查这些更改并根据规范生成清晰的 Git Commit Message。`
+                    if (injectTextToChatInput(prompt)) {
+                      setMessage({ kind: 'ok', text: t('changes.sentSuccess') })
+                    }
+                  }}>
+                  💬 {t('changes.sendToChat')}
+                </button>
+              </div>
               {conflicts.length > 0 ? (
                 <div className="dsh-gp-conflict-banner">
                   ⚠️ {t('changes.conflicts', { count: String(conflicts.length) })}
@@ -913,10 +951,21 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
 
               {diffState !== null ? (
                 <div className="dsh-gp-changes-diff">
-                  <div className="dsh-gp-changes-head">
-                    <span>{t('changes.diff')}: {diffState.file}</span>
+                  <div className="dsh-gp-changes-head" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('changes.diff')}: {diffState.file}</span>
                     <button type="button" className="dsh-gp-btn"
-                      onClick={() => setDiffState(null)} style={{ marginLeft: 'auto', fontSize: 11, padding: '0 6px' }}>
+                      title={t('changes.diffToChat')}
+                      style={{ marginLeft: 'auto', fontSize: 11, padding: '0 6px', whiteSpace: 'nowrap' }}
+                      onClick={() => {
+                        const prompt = `请帮我 Review 文件 \`${diffState.file}\` 的以下 Diff 改动：\n\`\`\`diff\n${diffState.content.slice(0, 8000)}\n\`\`\``
+                        if (injectTextToChatInput(prompt)) {
+                          setMessage({ kind: 'ok', text: t('changes.sentSuccess') })
+                        }
+                      }}>
+                      💬 {t('changes.diffToChat')}
+                    </button>
+                    <button type="button" className="dsh-gp-btn"
+                      onClick={() => setDiffState(null)} style={{ fontSize: 11, padding: '0 6px' }}>
                       ✕
                     </button>
                   </div>
