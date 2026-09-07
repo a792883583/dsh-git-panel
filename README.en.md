@@ -23,6 +23,7 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
 - **Changes + syntax-colored Diff**: uncommitted changed files are listed under the write bar (status code + path); click any file to view its full diff against HEAD with line-by-line coloring (green + for additions, red - for deletions, blue @@ for hunks) — review changes clearly before committing
 - **One-click Chat Context Injection**:
   - **Send Changes to Chat**: click "💬 Send changes to chat input" in the changes header to generate a structured prompt listing modified files, allowing the AI agent to summarize or compose commit messages
+  - **Per-file Quick Actions**: each staged/unstaged file provides "📋 Copy relative path", "💬 Ask Agent about this file", and one-click "↩️ Discard Changes" with safety confirmation
   - **Send Diff to Chat**: click "💬 Send diff to chat input" in the diff header to insert the selected file's unified diff directly into the prompt box for detailed code review
 - **Graph commit actions**: click a commit node in the graph to **cherry-pick it onto the current branch** or **revert it** (`git revert --no-edit`)
 - **Multilingual**: follows the DSH Web UI language (Chinese / English); Spanish browsers automatically get Spanish copy; defaults to Simplified Chinese

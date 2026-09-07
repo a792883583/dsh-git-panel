@@ -916,6 +916,22 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
                       <div key={c.file} className="dsh-gp-changes-item" onClick={() => void loadDiff(c.file)}>
                         <span className="dsh-gp-changes-code">{c.code}</span>
                         <span className="dsh-gp-changes-file" title={c.file}>{c.file}</span>
+                        <button type="button" className="dsh-gp-file-act" title={t('changes.copyPath')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            try {
+                              navigator.clipboard.writeText(c.file)
+                              setMessage({ kind: 'ok', text: t('changes.copyPathDone') })
+                            } catch {}
+                          }}>📋</button>
+                        <button type="button" className="dsh-gp-file-act" title={t('changes.fileToChat')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const prompt = `请帮我分析已暂存文件：\`${c.file}\``
+                            if (injectTextToChatInput(prompt)) {
+                              setMessage({ kind: 'ok', text: t('changes.sentSuccess') })
+                            }
+                          }}>💬</button>
                         <button type="button" className="dsh-gp-file-act" title={t('changes.unstage')}
                           onClick={(e) => { e.stopPropagation(); void runWrite('unstage' as any, c.file) }}>−</button>
                       </div>
@@ -934,6 +950,22 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
                       <div key={c.file} className="dsh-gp-changes-item" onClick={() => void loadDiff(c.file)}>
                         <span className="dsh-gp-changes-code">{c.code}</span>
                         <span className="dsh-gp-changes-file" title={c.file}>{c.file}</span>
+                        <button type="button" className="dsh-gp-file-act" title={t('changes.copyPath')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            try {
+                              navigator.clipboard.writeText(c.file)
+                              setMessage({ kind: 'ok', text: t('changes.copyPathDone') })
+                            } catch {}
+                          }}>📋</button>
+                        <button type="button" className="dsh-gp-file-act" title={t('changes.fileToChat')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const prompt = `请帮我分析并处理该文件的改动：\`${c.file}\``
+                            if (injectTextToChatInput(prompt)) {
+                              setMessage({ kind: 'ok', text: t('changes.sentSuccess') })
+                            }
+                          }}>💬</button>
                         <button type="button" className="dsh-gp-file-act" title={t('changes.stage')}
                           onClick={(e) => { e.stopPropagation(); void runWrite('stage' as any, c.file) }}>+</button>
                         <button type="button" className="dsh-gp-file-act" title={t('changes.discard')}

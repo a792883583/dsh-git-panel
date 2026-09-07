@@ -23,6 +23,7 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
 - **Cambios + Diff coloreado**: los archivos modificados sin confirmar se listan bajo la barra de escritura (código de estado + ruta); haga clic en un archivo para ver su diff completo contra HEAD con líneas coloreadas (+ verde para adiciones, - rojo para eliminaciones, @@ azul para bloques) — revise los cambios con claridad antes de confirmar
 - **Inyección de contexto en el chat con un clic**:
   - **Enviar cambios al chat**: haga clic en "💬 Enviar cambios al chat" en el encabezado de cambios para generar un mensaje estructurado con los archivos modificados y solicitar al agente revisiones o mensajes de confirmación
+  - **Acciones por archivo**: cada archivo incluye "📋 Copiar ruta relativa", "💬 Preguntar al Agente sobre este archivo" y "↩️ Descartar cambios" con confirmación de seguridad
   - **Enviar diff al chat**: haga clic en "💬 Enviar diff al chat" dentro del visor de diff para enviar las diferencias exactas al cuadro de chat
 - **Acciones sobre commits del gráfico**: haga clic en un nodo de commit del gráfico para **cherry-pick a la rama actual** o **revertirlo** (`git revert --no-edit`)
 - **Multilingüe**: sigue el idioma de la interfaz web de DSH (chino / inglés); los navegadores en español reciben automáticamente el texto en español; por defecto chino simplificado
