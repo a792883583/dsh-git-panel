@@ -27,10 +27,15 @@ DSH Web GUI 的 Git 面板插件：分支管理（切换 / 拉取 / 抓取 / 重
   - **文件 Diff 一键带入**：Diff 头部提供「💬 将 Diff 带入对话输入框」，直接把该文件的完整差异送入会话让 Agent 深度分析
 - **图谱提交操作**：点击图谱中的提交节点，可一键 **cherry-pick 到当前分支** 或 **撤销该提交**（`git revert --no-edit`）
 - **多语言**：自动跟随 DSH Web 界面语言（中文 / 英文），西班牙语浏览器自动切换西班牙语，默认简体中文
+- **官方右侧栏原生标签页**：Git 面板作为右侧栏的一等公民标签与「文件」并列，展开、收起、宽度拖拽、多标签切换全部由官方侧边栏接管，不再改写页面布局
 - 跟随当前会话工作目录：切换项目会话自动重新绑定
 - 明暗主题跟随 DSH Web GUI
 
 ## 界面预览
+
+**官方右侧栏原生标签页**（与内置「文件」并列，展开/收起、宽度拖拽、标签切换全部由官方侧边栏接管）：
+
+![右侧栏中的 Git 标签页](docs/sidebar-tab.png)
 
 **分支面板**（本地/远程分支、ahead/behind、双击切换、右键菜单）：
 
@@ -50,7 +55,9 @@ DSH Web GUI 的 Git 面板插件：分支管理（切换 / 拉取 / 抓取 / 重
 dsh plugin --profile web add dsh-git-panel
 ```
 
-重启 `dsh web`，打开绑定 git 仓库的项目会话，聊天区右侧出现「Git 面板」。
+重启 `dsh web`，打开绑定 git 仓库的项目会话，然后点开右上角的右侧栏，选择 **Git** 标签页。
+
+> 需要 DSH `>=0.1.5-alpha.1`（该版本起提供右侧栏多标签框架 `@deepseek-ai/dsh-client-ui-sidebar-right`）。
 
 > 本地开发时可用 `dsh plugin --profile web add link:/path/to/dsh-git-panel` 以链接方式安装，修改源码后 `npm run build` 并刷新页面即可生效。
 

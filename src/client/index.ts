@@ -1,18 +1,20 @@
 /**
- * dsh-git-panel —— 浏览器端：将 git 面板列挂载到 web shell 的 frame 网格
- *（右侧），绑定到当前活动会话的 cwd，并驱动 /git-panel 宿主路由。所有接线
- * 失败都会记日志而不会抛出——当插件 apply 抛出异常时，shell 会中止整个启动
- * 流程。
+ * dsh-git-panel —— 浏览器端：把 Git 面板注册为官方右侧栏的原生 Tab
+ *（`sidebar.right.pane.tab` + `sidebar.right.pane.tab.title`），并绑定当前活动
+ * 会话的 cwd，驱动 /git-panel 宿主路由。面板的展开、收起、宽度与多标签切换全部
+ * 交给官方右侧栏接管，不再改动底层网格布局。
+ *
+ * 所有接线失败都会记日志而不会抛出——当插件 apply 抛出异常时，shell 会中止整个
+ * 启动流程。
  * @module dsh-git-panel/client
  */
 
+import { createElement } from 'react'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
-import { createRoot, type Root } from 'react-dom/client'
 import { GitPanelApi } from './api.ts'
 import { BranchChip } from './BranchChip.tsx'
-import { mountPanelColumn, waitForFrame, type PanelColumn } from './frame.ts'
 import { initI18n } from './i18n.ts'
-import { GitPanel } from './Panel.tsx'
+import { GitTabBody } from './GitTab.tsx'
 
 /**
  * 我们使用到的注入式客户端运行时结构。这里在本地声明，而不是导入 SDK 的
@@ -23,6 +25,9 @@ import { GitPanel } from './Panel.tsx'
 interface PanelClientContext {
   effect(fn: () => (() => void) | void, name: string): void
   inject(services: string[], fn: (scope: PanelClientContext) => void): void
+  sidebarRightTabs?: {
+    register(def: unknown): () => void
+  }
   sessions: {
     list: {
       getSnapshot(): { current?: string; byId: Record<string, { cwd?: string }> }
@@ -39,24 +44,18 @@ interface PanelClientContext {
   }
 }
 
-/** 必需服务：用于获取项目根目录的 sessions，用于文案的 locale。 */
 export const inject = ['sessions', 'locale']
 
-const HIDDEN_KEY = 'dsh-git-panel.hidden'
+const TAB_ID = '@deepseek-ai/dsh-git-panel'
 
-/** 应用浏览器端。 */
 export function apply(ctx: PanelClientContext): void {
-  // 获取平台语言（zh/en）以及浏览器语言用于文案；语言接口只订阅一次，
-  // 并驱动 useT() hook。
   try {
     initI18n(ctx.locale)
   } catch (error) {
-    console.error('dsh-git-panel: i18n init failed (falling back to Chinese)', error)
+    console.error('dsh-git-panel: i18n init failed', error)
   }
-  // 输入 dock 处的分支 chip，挂载在工作区选择器旁、提示输入框上方（官方
-  // conversation.input.dock 槽位，rc.6 中声明）。采用 git-graph 式的注册流程：
-  // ctx.inject 会等待服务就绪，register() 接收注入 props 的 FACTORY（shell
-  // 会把返回的对象传入组件的 props）。
+
+  // 1. 输入框上方分支状态 Chip
   ctx.inject(['slots', 'sessions'], (scope: PanelClientContext) => {
     try {
       scope.slots.inject('conversation.input.dock', () =>
@@ -72,84 +71,51 @@ export function apply(ctx: PanelClientContext): void {
     }
   })
 
-  ctx.effect(() => {
-    const api = new GitPanelApi()
-    let column: PanelColumn | null = null
-    let root: Root | null = null
-    let currentPath = ''
-    let disposeWait: (() => void) | undefined
-    let disposeSessions: (() => void) | undefined
-    let hidden = false
+  // 2. 官方右侧栏集成 (适配新版 DSH 0.1.5-alpha.2+ 原生多 Tab 系统)
+  //    面板本体不再外挂独立列，也不再需要折叠箭头：完全由官方右侧栏接管。
+  const api = new GitPanelApi()
+  ctx.inject(['sidebarRightTabs', 'slots'], (scope: any) => {
     try {
-      hidden = localStorage.getItem(HIDDEN_KEY) === '1'
-    } catch {
-      /* 忽略 */
-    }
+      if (scope.sidebarRightTabs) {
+        scope.sidebarRightTabs.register({
+          id: TAB_ID,
+          kind: 'git',
+          priority: 'extension',
+          title: () => 'Git',
+          guide: [{
+            order: 12,
+            title: () => 'Git 版本控制与提交图谱',
+          }],
+        })
 
-    const render = (): void => {
-      if (root === null) return
-      // 隐藏状态下：卸载面板树，这样就不会加载任何分支数据。
-      if (hidden) {
-        root.render(null)
-        return
+        scope.slots.inject('sidebar.right.pane.tab', () =>
+          scope.slots.register({
+            name: 'sidebar.right.pane.tab',
+            key: TAB_ID,
+            inject: () => ({ api, sessions: ctx.sessions }),
+          }, GitTabBody)
+        )
+
+        scope.slots.inject('sidebar.right.pane.tab.title', () =>
+          scope.slots.register({
+            name: 'sidebar.right.pane.tab.title',
+            key: TAB_ID,
+          }, () => createElement('span', { style: { display: 'flex', alignItems: 'center', gap: 5 } },
+            createElement('svg', { viewBox: '0 0 16 16', width: 14, height: 14, fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' },
+              createElement('circle', { cx: 4, cy: 4, r: 2 }),
+              createElement('circle', { cx: 4, cy: 12, r: 2 }),
+              createElement('circle', { cx: 12, cy: 8, r: 2 }),
+              createElement('path', { d: 'M4 6v4M4 8h5a3 3 0 013 3' })
+            ),
+            createElement('span', null, 'Git')
+          ))
+        )
+        console.log('dsh-git-panel: registered into native sidebarRightTabs')
       }
-      root.render(ReactPanel(api, currentPath))
+    } catch (err) {
+      console.warn('dsh-git-panel: sidebarRightTabs register error', err)
     }
-
-    const setHidden = (next: boolean): void => {
-      if (hidden === next) return
-      hidden = next
-      try {
-        localStorage.setItem(HIDDEN_KEY, next ? '1' : '0')
-      } catch {
-        /* 忽略 */
-      }
-      // 边缘处的切换箭头会自行更新方向与位置。
-      column?.setVisible(!next)
-      render()
-    }
-
-    const bindRoot = (): void => {
-      const snapshot = ctx.sessions.list.getSnapshot()
-      const sessionId: string | undefined = snapshot.current
-      const cwd = sessionId === undefined ? undefined : snapshot.byId[sessionId]?.cwd
-      const path = typeof cwd === 'string' && cwd !== '' ? cwd : ''
-      if (path === currentPath) return
-      currentPath = path
-      render()
-    }
-
-    disposeWait = waitForFrame((frame) => {
-      try {
-        column = mountPanelColumn(frame, 320, { onToggle: () => setHidden(!hidden) })
-        if (hidden) column.setVisible(false)
-        root = createRoot(column.element)
-        render()
-      } catch (error) {
-        console.error('dsh-git-panel: mount failed', error)
-      }
-    })
-
-    disposeSessions = ctx.sessions.list.subscribe(bindRoot)
-    bindRoot()
-
-    return () => {
-      disposeSessions?.()
-      disposeWait?.()
-      try {
-        root?.unmount()
-      } catch {
-        /* 忽略 */
-      }
-      column?.dispose()
-    }
-  }, 'dsh-git-panel: mount')
-}
-
-/** 本地辅助函数，让 Panel.tsx 不必与 sessions 管道纠缠。 */
-import { createElement } from 'react'
-function ReactPanel(api: GitPanelApi, path: string): React.ReactElement {
-  return createElement(GitPanel, { path, api })
+  })
 }
 
 /** Cordis 插件入口 —— 同时提供命名与默认导出，确保 loader 总能解析到它。 */

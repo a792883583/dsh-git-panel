@@ -27,10 +27,15 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
   - **Enviar diff al chat**: haga clic en "💬 Enviar diff al chat" dentro del visor de diff para enviar las diferencias exactas al cuadro de chat
 - **Acciones sobre commits del gráfico**: haga clic en un nodo de commit del gráfico para **cherry-pick a la rama actual** o **revertirlo** (`git revert --no-edit`)
 - **Multilingüe**: sigue el idioma de la interfaz web de DSH (chino / inglés); los navegadores en español reciben automáticamente el texto en español; por defecto chino simplificado
+- **Pestaña nativa en la barra lateral derecha**: el panel Git es una pestaña de primera clase junto a «Archivos»; expandir, contraer, arrastrar el ancho y cambiar de pestaña los gestiona la barra lateral oficial, sin reescribir el diseño de la página
 - Sigue el directorio de trabajo de la sesión actual: se reenlaza automáticamente al cambiar de sesión de proyecto
 - Tema claro / oscuro siguiendo la GUI web de DSH
 
 ## Capturas de pantalla
+
+**Pestaña nativa en la barra lateral derecha** — Git aparece junto a la pestaña integrada «Archivos»; la barra lateral gestiona expandir/contraer, el ancho y el cambio de pestañas:
+
+![Pestaña Git en la barra lateral derecha](docs/sidebar-tab.png)
 
 **Panel de ramas** (ramas locales/remotas, adelante/detrás, doble clic para cambiar, menú contextual):
 
@@ -50,7 +55,9 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
 dsh plugin --profile web add dsh-git-panel
 ```
 
-Reinicia `dsh web`, abre una sesión de proyecto vinculada a un repositorio git y el panel de Git aparece en el lado derecho del chat.
+Reinicia `dsh web`, abre una sesión de proyecto vinculada a un repositorio git, abre la barra lateral derecha (arriba a la derecha) y elige la pestaña **Git**.
+
+> Requiere DSH `>=0.1.5-alpha.1` (la versión que introdujo el marco de pestañas laterales derechas `@deepseek-ai/dsh-client-ui-sidebar-right`).
 
 > Para desarrollo local, instala mediante un enlace: `dsh plugin --profile web add link:/path/to/dsh-git-panel`. Tras editar el código, ejecuta `npm run build` y actualiza la página para ver los cambios.
 

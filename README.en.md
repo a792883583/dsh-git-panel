@@ -27,10 +27,15 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
   - **Send Diff to Chat**: click "💬 Send diff to chat input" in the diff header to insert the selected file's unified diff directly into the prompt box for detailed code review
 - **Graph commit actions**: click a commit node in the graph to **cherry-pick it onto the current branch** or **revert it** (`git revert --no-edit`)
 - **Multilingual**: follows the DSH Web UI language (Chinese / English); Spanish browsers automatically get Spanish copy; defaults to Simplified Chinese
+- **Native right-sidebar tab**: the Git panel is a first-class tab beside the built-in "Files" tab — expand, collapse, width dragging, and tab switching are all owned by the official sidebar, with no page-layout rewriting
 - Follows the current session's working directory: re-binds automatically when switching project sessions
 - Light / dark theme follows the DSH Web GUI
 
 ## Screenshots
+
+**Native tab in the right sidebar** — Git sits beside the built-in "Files" tab, and the sidebar owns expand/collapse, width drag, and tab switching:
+
+![Git tab in the right sidebar](docs/sidebar-tab.png)
 
 **Branch panel** (local/remote branches, ahead/behind, double-click to switch, right-click menu):
 
@@ -50,7 +55,9 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
 dsh plugin --profile web add dsh-git-panel
 ```
 
-Restart `dsh web`, open a project session bound to a git repository, and the Git panel appears on the right side of the chat.
+Restart `dsh web`, open a project session bound to a git repository, then open the right sidebar (top-right) and pick the **Git** tab.
+
+> Requires DSH `>=0.1.5-alpha.1` (the release that introduced the right-sidebar multi-tab framework `@deepseek-ai/dsh-client-ui-sidebar-right`).
 
 > For local development, install via a link instead: `dsh plugin --profile web add link:/path/to/dsh-git-panel`. After editing source, run `npm run build` and refresh the page to see changes.
 
