@@ -595,8 +595,15 @@ const GraphViewComponent = memo(function GraphViewComponent(props: { graph: Grap
 })
 
 /** 完整的面板。 */
-export function GitPanel(props: { path: string; api: GitPanelApi }): React.ReactElement {
-  const { path, api } = props
+export function GitPanel(props: {
+  path: string
+  api: GitPanelApi
+  /** 在右侧栏以完整 Git 对比视图打开一个变更文件；返回是否成功。 */
+  onOpenDiff?: (file: string) => boolean
+  /** 写操作后刷新变更缓存（文件树装饰共用）。 */
+  onRefreshStatus?: () => void
+}): React.ReactElement {
+  const { path, api, onOpenDiff, onRefreshStatus } = props
   const t = useT()
   const [tab, setTab] = useState<'branches' | 'graph'>('branches')
   const [branches, setBranches] = useState<BranchesView | null>(null)
@@ -710,10 +717,11 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
       if (action === 'commit' || action === 'stash-pop') setCommitMsg('')
       void refreshStatus()
       void load()
+      onRefreshStatus?.()
     } else {
       setMessage({ text: result.error?.message ?? t('op.failed'), kind: 'err' })
     }
-  }, [path, api, busy, commitMsg, t, refreshStatus, load])
+  }, [path, api, busy, commitMsg, t, refreshStatus, load, onRefreshStatus])
 
   // 输入 dock 的 chip 会在一次成功的分支切换后派发这个事件。
   useEffect(() => {
@@ -947,9 +955,16 @@ export function GitPanel(props: { path: string; api: GitPanelApi }): React.React
                   </div>
                   <div className="dsh-gp-changes-list">
                     {unstaged.map((c) => (
-                      <div key={c.file} className="dsh-gp-changes-item" onClick={() => void loadDiff(c.file)}>
+                      <div key={c.file} className="dsh-gp-changes-item"
+                        title="点击在右侧栏打开完整 Git 对比（VS Code 风格）"
+                        onClick={() => {
+                          if (onOpenDiff?.(c.file) === true) return
+                          void loadDiff(c.file)
+                        }}>
                         <span className="dsh-gp-changes-code">{c.code}</span>
                         <span className="dsh-gp-changes-file" title={c.file}>{c.file}</span>
+                        <button type="button" className="dsh-gp-file-act" title="内嵌查看 diff"
+                          onClick={(e) => { e.stopPropagation(); void loadDiff(c.file) }}>≡</button>
                         <button type="button" className="dsh-gp-file-act" title={t('changes.copyPath')}
                           onClick={(e) => {
                             e.stopPropagation()

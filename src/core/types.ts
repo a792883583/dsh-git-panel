@@ -63,3 +63,29 @@ export interface OpResult {
   output: string
   error?: GitError
 }
+
+/** 工作区变更清单：路径以工作区根为基准（含未跟踪）。 */
+export interface FileStatusView {
+  /** 规范化后的工作区根。 */
+  workspace: string
+  /** 仓库根（git rev-parse --show-toplevel）。 */
+  toplevel: string
+  /** 有改动的文件与它们的 porcelain 状态码。 */
+  entries: Array<{ path: string; code: string }>
+}
+
+/** 工作区文件内容读取结果。 */
+export interface WorkspaceFileRead {
+  ok: boolean
+  /** UTF-8 文本；二进制或失败时为空串。 */
+  text: string
+  /** 文件字节数。 */
+  bytes: number
+  /** 是否包含 NUL（按二进制处理）。 */
+  binary: boolean
+  /** 是否因超出上限被截断。 */
+  truncated: boolean
+  /** 文件不存在（新增/删除场景）。 */
+  missing?: boolean
+  error?: GitError
+}

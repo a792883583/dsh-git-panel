@@ -57,7 +57,9 @@ dsh plugin --profile web add dsh-git-panel
 
 Reinicia `dsh web`, abre una sesión de proyecto vinculada a un repositorio git, abre la barra lateral derecha (arriba a la derecha) y elige la pestaña **Git**.
 
-> Requiere DSH `>=0.1.5-alpha.1` (la versión que introdujo el marco de pestañas laterales derechas `@deepseek-ai/dsh-client-ui-sidebar-right`).
+> **Requisitos de entorno**: necesita el **DSH Web actual** (`>=0.1.5-alpha.1`, la versión que introdujo el marco de pestañas laterales derechas `@deepseek-ai/dsh-client-ui-sidebar-right`).
+> Las marcas de cambios en el árbol de archivos y la pestaña de diff de Git dependen del registro de tipos de pestaña de la barra lateral derecha y del modelo de direcciones `dsh-resource://file`; la entrada «cambiar a diff de Git dentro de la vista previa oficial» depende además de `@deepseek-ai/dsh-client-ui-sidebar-documentpreview`, incluido por defecto desde 0.1.5.
+> En versiones antiguas de DSH (por ejemplo `0.1.2-rc.1`) estas funciones no hacen nada: no existe el registro de pestañas ni el modelo unificado de direcciones de archivo.
 
 > Para desarrollo local, instala mediante un enlace: `dsh plugin --profile web add link:/path/to/dsh-git-panel`. Tras editar el código, ejecuta `npm run build` y actualiza la página para ver los cambios.
 

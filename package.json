@@ -1,7 +1,7 @@
 {
   "name": "dsh-git-panel",
-  "version": "0.1.12",
-  "description": "DSH web GUI git panel: local/remote branches with ahead/behind, one-click branch switch / pull / fetch, and a GitLens-style commit graph.",
+  "version": "0.1.13",
+  "description": "DSH web GUI git panel: branch management, commit graph, VS Code-style side-by-side diff with merge-conflict resolution, and workspace file-tree change badges.",
   "license": "MIT",
   "author": "Jaden Tang <jaden.tang@sjfood.com>",
   "repository": {
@@ -18,7 +18,9 @@
     "git",
     "branch",
     "commit-graph",
-    "panel"
+    "panel",
+    "diff",
+    "merge-conflict"
   ],
   "type": "module",
   "main": "lib/index.js",
@@ -68,7 +70,13 @@
     "@deepseek-ai/dsh-subprocess": ">=0.1.0-rc.6 <0.3.0",
     "@deepseek-ai/dsh-workspace": ">=0.1.0-rc.6 <0.3.0",
     "react": ">=16.8.0 <20.0.0",
-    "@deepseek-ai/dsh-client-ui-sidebar-right": ">=0.1.5-alpha.1 <0.3.0"
+    "@deepseek-ai/dsh-client-ui-sidebar-right": ">=0.1.5-alpha.1 <0.3.0",
+    "@deepseek-ai/dsh-client-ui-sidebar-documentpreview": ">=0.1.5-alpha.1 <0.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-client-ui-sidebar-documentpreview": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

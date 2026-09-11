@@ -21,6 +21,13 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
   - **Stash / pop**: `git stash push` (optional message) / `git stash pop`
   - **Status**: shows the number of changed files (`git status --porcelain`)
 - **Changes + syntax-colored Diff**: uncommitted changed files are listed under the write bar (status code + path); click any file to view its full diff against HEAD with line-by-line coloring (green + for additions, red - for deletions, blue @@ for hunks) — review changes clearly before committing
+- **File-tree change badges (VS Code look)**: in the right sidebar's "Files" tree, changed files carry a status letter right after the name and a tinted filename (`M` modified / `A` added / `U` untracked / `D` deleted / `R` renamed / `C` conflicted), and directories containing changes get a dot; badges refresh automatically with `git status`, no manual tree reload needed
+- **Git diff view (VS Code-style side-by-side)**: click a changed file to open its diff in the right sidebar
+  - HEAD on the left, working tree on the right, line numbers strictly aligned, with additions / deletions / modifications colored separately
+  - **Split / unified** layouts, **collapse unchanged regions** (3 lines of context, click to expand), **word wrap** toggle, **font zoom**, and a **manual edit** mode
+  - The header shows `+added / −removed` counts; "Source" returns to the official text preview, "Stage" runs `git add`, "Save" writes back to the workspace
+  - Only files that **actually have changes** are claimed by this view; untouched files keep using the official preview, so the two never interfere
+- **One-click merge-conflict resolution**: when a file contains `<<<<<<<` / `=======` / `>>>>>>>` markers the view switches to the conflict panel, showing both sides per block with **Keep Current**, **Keep Incoming (branch)**, and **Keep Both** actions; hit "Save" to write the resolution back to the file
 - **One-click Chat Context Injection**:
   - **Send Changes to Chat**: click "💬 Send changes to chat input" in the changes header to generate a structured prompt listing modified files, allowing the AI agent to summarize or compose commit messages
   - **Per-file Quick Actions**: each staged/unstaged file provides "📋 Copy relative path", "💬 Ask Agent about this file", and one-click "↩️ Discard Changes" with safety confirmation
@@ -32,6 +39,18 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
 - Light / dark theme follows the DSH Web GUI
 
 ## Screenshots
+
+**File-tree change badges** — changed files carry a status letter after the name and a tinted filename, and directories with changes get a dot, just like VS Code's Explorer:
+
+![File tree change badges](docs/git-filetree-status.png)
+
+**Git diff view** — full-width side-by-side diff with aligned line numbers, collapsible unchanged regions, and change statistics plus actions in the header:
+
+![Git diff view](docs/git-diff-split.png)
+
+**Merge-conflict resolution** — every conflict block shows both sides with three one-click actions; saving writes the result back:
+
+![Merge conflict resolution](docs/git-conflict-resolve.png)
 
 **Native tab in the right sidebar** — Git sits beside the built-in "Files" tab, and the sidebar owns expand/collapse, width drag, and tab switching:
 
@@ -57,7 +76,9 @@ dsh plugin --profile web add dsh-git-panel
 
 Restart `dsh web`, open a project session bound to a git repository, then open the right sidebar (top-right) and pick the **Git** tab.
 
-> Requires DSH `>=0.1.5-alpha.1` (the release that introduced the right-sidebar multi-tab framework `@deepseek-ai/dsh-client-ui-sidebar-right`).
+> **Runtime requirements**: this needs the **current DSH Web** (`>=0.1.5-alpha.1`, i.e. the release that introduced the right-sidebar multi-tab framework `@deepseek-ai/dsh-client-ui-sidebar-right`).
+> The file-tree change badges and the Git diff tab rely on the right sidebar's tab-type registry and the `dsh-resource://file` address model; the "switch to Git diff inside the official file preview" entry additionally relies on DSH's own `@deepseek-ai/dsh-client-ui-sidebar-documentpreview` (bundled by default since 0.1.5).
+> On older DSH builds (for example `0.1.2-rc.1`) these features do nothing — those versions have no right-sidebar tab registry and no unified file-address model.
 
 > For local development, install via a link instead: `dsh plugin --profile web add link:/path/to/dsh-git-panel`. After editing source, run `npm run build` and refresh the page to see changes.
 

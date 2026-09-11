@@ -5,11 +5,12 @@
  * @module dsh-git-panel/host/git-service
  */
 
-import { realpath } from 'node:fs/promises'
+import { readFile as readBytes, realpath, stat } from 'node:fs/promises'
+import { relative as relativePath, resolve as resolvePath, sep } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subprocess'
 import type { SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
-import type { BranchesView, BranchRow, GitError, GraphCommit, GraphTips, GraphView, OpResult } from '../core/types.ts'
+import type { BranchesView, BranchRow, FileStatusView, GitError, GraphCommit, GraphTips, GraphView, OpResult, WorkspaceFileRead } from '../core/types.ts'
 
 /** 一次已完成的 git 调用。 */
 export interface GitRunResult {
@@ -25,6 +26,32 @@ export interface GitRunner {
 
 /** 单条 git 命令的收集输出上限。 */
 const OUTPUT_CAP_BYTES = 1 << 20
+
+/** 送入浏览器做差异对比的文本上限（超出部分截断，避免把大文件塞进 JSON）。 */
+const DIFF_TEXT_CAP_BYTES = 1 << 21
+
+/**
+ * 工作区相对路径的安全判定：拒绝绝对路径与任何向上穿越。
+ * @param name - 调用方给出的文件路径。
+ * @returns 可以安全地拼到工作区根之下时为 true。
+ */
+function safeRelative(name: string): boolean {
+  if (name === '' || name.startsWith('/') || name.startsWith('\\')) return false
+  if (/^[a-zA-Z]:/u.test(name)) return false
+  if (name === '..' || name.startsWith('../') || name.includes('/../') || name.endsWith('/..')) return false
+  return true
+}
+
+/**
+ * 绝对路径是否落在工作区根之下。
+ * @param root - 工作区根。
+ * @param absolute - 待判定的绝对路径。
+ * @returns 在根之下（或就是根本身）时为 true。
+ */
+function inside(root: string, absolute: string): boolean {
+  if (absolute === root) return true
+  return absolute.startsWith(root.endsWith(sep) ? root : `${root}${sep}`)
+}
 
 /** 工作区归属判定结果。 */
 export type WorkspaceVerdict = { ok: true; canonical: string } | { ok: false; error: GitError }
@@ -320,6 +347,128 @@ export class GitService {
       return { ok: false, output: '', error: { code: 'diff-failed', message: run.stderr.trim() || 'git diff failed' } }
     }
     return { ok: true, output: run.stdout }
+  }
+
+  /** 获取文件 HEAD 版本的内容（git show HEAD:<仓库相对路径>）。 */
+  async showHead(path: string, file: string): Promise<{ ok: boolean; output: string; error?: { code: string; message: string } }> {
+    const canonical = await this.requireWorkspace(path)
+    const name = file.trim()
+    if (!safeRelative(name)) {
+      return { ok: false, output: '', error: { code: 'invalid-file', message: '非法文件路径' } }
+    }
+    const toplevel = await this.repoRoot(canonical)
+    const absolute = resolvePath(canonical, name)
+    if (!inside(canonical, absolute)) {
+      return { ok: false, output: '', error: { code: 'outside-workspace', message: '文件位于工作区外' } }
+    }
+    const tracked = relativePath(toplevel, absolute).split(sep).join('/')
+    const run = await this.runner.run(['show', `HEAD:${tracked}`], toplevel)
+    if (run.exitCode !== 0) {
+      return { ok: false, output: '', error: { code: 'show-failed', message: run.stderr.trim() || 'git show HEAD failed' } }
+    }
+    return { ok: true, output: run.stdout }
+  }
+
+  /** 读取工作区文件的当前内容（UTF-8）；二进制与超限文件只回报元数据。 */
+  async readFile(path: string, file: string): Promise<WorkspaceFileRead> {
+    const canonical = await this.requireWorkspace(path)
+    const name = file.trim()
+    if (!safeRelative(name)) {
+      return { ok: false, text: '', bytes: 0, binary: false, truncated: false, error: { code: 'invalid-file', message: '非法文件路径' } }
+    }
+    const absolute = resolvePath(canonical, name)
+    if (!inside(canonical, absolute)) {
+      return { ok: false, text: '', bytes: 0, binary: false, truncated: false, error: { code: 'outside-workspace', message: '文件位于工作区外' } }
+    }
+    try {
+      const info = await stat(absolute)
+      if (info.isDirectory()) {
+        return { ok: false, text: '', bytes: 0, binary: false, truncated: false, error: { code: 'not-a-file', message: '这是一个目录' } }
+      }
+      const buffer = await readBytes(absolute)
+      const binary = buffer.includes(0)
+      const truncated = buffer.byteLength > DIFF_TEXT_CAP_BYTES
+      const slice = truncated ? buffer.subarray(0, DIFF_TEXT_CAP_BYTES) : buffer
+      return {
+        ok: true,
+        text: binary ? '' : slice.toString('utf8'),
+        bytes: buffer.byteLength,
+        binary,
+        truncated,
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        return { ok: true, text: '', bytes: 0, binary: false, truncated: false, missing: true }
+      }
+      return {
+        ok: false,
+        text: '',
+        bytes: 0,
+        binary: false,
+        truncated: false,
+        error: { code: 'read-failed', message: error instanceof Error ? error.message : '读取失败' },
+      }
+    }
+  }
+
+  /** 保存文件内容（冲突解决或编辑回写）。 */
+  async saveFile(path: string, file: string, content: string): Promise<OpResult> {
+    const canonical = await this.requireWorkspace(path)
+    const name = file.trim()
+    if (!safeRelative(name)) {
+      return { ok: false, output: '', error: { code: 'invalid-file', message: '非法文件路径' } }
+    }
+    const absolute = resolvePath(canonical, name)
+    if (!inside(canonical, absolute)) {
+      return { ok: false, output: '', error: { code: 'outside-workspace', message: '文件位于工作区外' } }
+    }
+    try {
+      const { writeFile } = await import('node:fs/promises')
+      await writeFile(absolute, content, 'utf8')
+      return { ok: true, output: 'saved' }
+    } catch (error) {
+      return { ok: false, output: '', error: { code: 'write-failed', message: error instanceof Error ? error.message : '写入失败' } }
+    }
+  }
+
+  /**
+   * 变更文件清单：以工作区根为基准的相对路径（含未跟踪），供客户端做同步的
+   * 「这个文件有没有 git 改动」门禁；同时回报仓库根，便于客户端展示。
+   */
+  async fileStatus(path: string): Promise<{ ok: boolean; value?: FileStatusView; error?: GitError }> {
+    const canonical = await this.requireWorkspace(path)
+    const toplevel = await this.repoRoot(canonical)
+    // 以仓库根为 cwd 运行，porcelain 的路径基准与 toplevel 必然一致。
+    const run = await this.runner.run(['status', '--porcelain', '-z', '--untracked-files=all'], toplevel)
+    if (run.exitCode !== 0) {
+      return { ok: false, error: { code: 'status-failed', message: run.stderr.trim() || 'git status failed' } }
+    }
+    const entries: Array<{ path: string; code: string }> = []
+    const chunks = run.stdout.split('\u0000')
+    for (let index = 0; index < chunks.length; index += 1) {
+      const entry = chunks[index]
+      if (entry === undefined || entry.length < 4) continue
+      const code = entry.slice(0, 2)
+      const target = entry.slice(3)
+      // -z 的重命名记录把原路径放在下一段，跳过它。
+      if (code.startsWith('R') || code.startsWith('C')) index += 1
+      const absolute = resolvePath(toplevel, target)
+      const local = relativePath(canonical, absolute).split(sep).join('/')
+      if (local === '' || local.startsWith('../') || local === '..') continue
+      entries.push({ path: local, code })
+    }
+    entries.sort((left, right) => (left.path < right.path ? -1 : left.path > right.path ? 1 : 0))
+    return {
+      ok: true,
+      value: { workspace: canonical, toplevel, entries },
+    }
+  }
+
+  /** 仓库根：非 git 目录回退到工作区根本身。 */
+  private async repoRoot(canonical: string): Promise<string> {
+    const run = await this.runner.run(['rev-parse', '--show-toplevel'], canonical)
+    const root = run.exitCode === 0 ? run.stdout.trim() : ''
+    return root === '' ? canonical : root
   }
 
   /** 摘取一个提交到当前分支（git cherry-pick）。 */

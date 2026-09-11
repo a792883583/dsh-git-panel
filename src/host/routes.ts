@@ -174,6 +174,33 @@ function route(service: GitService) {
           json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
           return
         }
+        case '/git-panel/show-head': {
+          const file = field(payload, 'file')
+          if (file === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.showHead(root, file)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/save-file': {
+          const file = field(payload, 'file')
+          const content = typeof (payload as any)?.content === 'string' ? (payload as any).content : null
+          if (file === null || content === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.saveFile(root, file, content)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/read-file': {
+          const file = field(payload, 'file')
+          if (file === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }
+          const value = await service.readFile(root, file)
+          json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/file-status': {
+          const value = await service.fileStatus(root)
+          json(res, value.ok ? { ok: true, value: value.value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
         case '/git-panel/stage': {
           const file = field(payload, 'file')
           if (file === null) { json(res, { ok: false, error: BAD_REQUEST }, 400); return }

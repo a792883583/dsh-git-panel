@@ -1,5 +1,5 @@
 /** /git-panel 路由的类型化传输层。 */
-import type { BranchesView, GraphView, OpResult } from '../core/types.ts'
+import type { BranchesView, FileStatusView, GraphView, OpResult, WorkspaceFileRead } from '../core/types.ts'
 
 export interface GitError {
   code: string
@@ -75,6 +75,24 @@ export class GitPanelApi {
 
   diffFile(path: string, file: string) {
     return post<OpResult>('/git-panel/diff', { path, file })
+  }
+
+  showHead(path: string, file: string) {
+    return post<OpResult>('/git-panel/show-head', { path, file })
+  }
+
+  saveFile(path: string, file: string, content: string) {
+    return post<OpResult>('/git-panel/save-file', { path, file, content })
+  }
+
+  /** 工作区变更清单（含 porcelain 状态码），文件树装饰与路由门禁共用。 */
+  fileStatus(path: string) {
+    return post<FileStatusView>('/git-panel/file-status', { path })
+  }
+
+  /** 读取工作区文件当前内容。 */
+  readFile(path: string, file: string) {
+    return post<WorkspaceFileRead>('/git-panel/read-file', { path, file })
   }
 
   stageFile(path: string, file: string) {
