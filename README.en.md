@@ -58,9 +58,9 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
 
 ![Git diff view](docs/git-diff-split.png)
 
-**Merge-conflict resolution** — every conflict block shows both sides with three one-click actions; saving writes the result back:
+**Merge-conflict resolution with full context** — the conflict and its surrounding code (8 lines either side, with line numbers) land on the first screen, while distant conflict-free regions stay folded; three one-click actions, and saving writes the result back:
 
-![Merge conflict resolution](docs/git-conflict-resolve.png)
+![Merge conflict resolution](docs/git-conflict-resolve.png?v=0.1.15)
 
 **Native tab in the right sidebar** — Git sits beside the built-in "Files" tab, and the sidebar owns expand/collapse, width drag, and tab switching:
 

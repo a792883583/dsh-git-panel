@@ -52,6 +52,18 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
 
 ![Pestaña Git en la barra lateral derecha](docs/sidebar-tab.png)
 
+**Marcas de cambios en el árbol de archivos** (añadido / modificado / eliminado, con insignias de conflicto):
+
+![Marcas de cambios en el árbol de archivos](docs/git-filetree-status.png)
+
+**Vista de diferencias estilo VS Code** (lado a lado, desplazamiento sincronizado):
+
+![Vista de diferencias](docs/git-diff-split.png)
+
+**Resolución de conflictos con contexto completo** — el conflicto y su código circundante aparecen directamente en la primera pantalla, con números de línea; las regiones lejanas quedan plegadas:
+
+![Resolución de conflictos de fusión](docs/git-conflict-resolve.png?v=0.1.15)
+
 **Panel de ramas** (ramas locales/remotas, adelante/detrás, doble clic para cambiar, menú contextual):
 
 ![Panel de ramas](docs/branches.png)
