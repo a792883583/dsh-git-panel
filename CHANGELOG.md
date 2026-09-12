@@ -2,6 +2,32 @@
 
 `dsh-git-panel` 的版本变更记录。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.1.14] - 2026-09-12
+
+### Added
+- **免终端原位凭据保存（像 VS Code 一样傻瓜式配置）**：
+  - 遇到私有企业 GitLab 缺少凭据或认证失败时，不再抛出冰冷终端指令，而是直接在面板内原位弹出优雅的账号密码配置卡片
+  - 一键自动将已认证的 Basic Auth 嵌入至 remote url 并安全写入 `~/.git-credentials`，自动规避 GCM 的 OAuth 弹窗死锁
+- **全景行号上下文冲突合并视图（首屏即是靶心）**：
+  - 冲突卡片与紧邻前后 8 行完整代码直接坐落首屏正中央，无需手动滚动
+  - 远端无关代码自动折叠为可展开条，行号精准无缝连贯
+  - 优化每块冲突顶部的「✔ 采用当前更改」「✔ 采用传入更改」「✔ 两者都保留」操作，解决完一键保存写回磁盘
+- **多语言情境感知 Prompt 智能引擎**：
+  - 检测到冲突时，按钮自动切换为「💬 将冲突分析带入对话」，一键注入专业的冲突排查与保留分析指令
+  - 无冲突时生成代码审查与规范 Commit Message 提示；全面自适应中文、英文、西班牙语三语
+- **多处极速操作直达**：
+  - 本地分支右侧的落后（`↓101`）胶囊徽章支持直接鼠标点击，一键快速拉取更新
+  - 右键菜单新增「⬇️ 拉取更新 (Pull)」与「🔄 抓取全部 (Fetch all)」，支持严格的并发防重入锁与「✕ 取消」操作
+
+### Fixed
+- **彻底根除 Windows 下 `subprocess-local: Windows Job runner exited with exit code 1` 异常**：
+  - 放弃脆弱的 DSH `ctx.subprocess.spawn` Job Object 驱动层，改用 Node.js 官方原生的 `child_process.execFile` 直连调度 git，性能与稳定性大幅提升
+- **修复一键同步（Sync）强制带 `--rebase` 导致的人工变基冲突**：
+  - 对标 VS Code 官方标准同步策略：仅超前时直接快速 push，有落后时才执行安全 pull，绝不使用 `--rebase`，从源头杜绝逐个 commit 重放造出的虚假冲突
+  - 自动检测并脱离历史残留的变基中间态（自动 `rebase --abort` 救援）
+- **全面适配最新 DSH Web Lexical 富文本编辑器**：
+  - 解决「💬 将改动带入对话输入框」在最新版本 DSH 下点击无反应的问题，支持基于 `contenteditable` 的标准文本注入
+
 ## [0.1.13] - 2026-09-11
 
 ### Added（VS Code 式改动感知）

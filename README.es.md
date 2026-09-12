@@ -25,6 +25,21 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
   - **Enviar cambios al chat**: haga clic en "💬 Enviar cambios al chat" en el encabezado de cambios para generar un mensaje estructurado con los archivos modificados y solicitar al agente revisiones o mensajes de confirmación
   - **Acciones por archivo**: cada archivo incluye "📋 Copiar ruta relativa", "💬 Preguntar al Agente sobre este archivo" y "↩️ Descartar cambios" con confirmación de seguridad
   - **Enviar diff al chat**: haga clic en "💬 Enviar diff al chat" dentro del visor de diff para enviar las diferencias exactas al cuadro de chat
+- **Resolución de conflictos de fusión con contexto completo**:
+  - Centra inmediatamente el bloque de conflicto en la primera pantalla con 8 líneas de contexto adyacente claro; el código lejano se pliega de forma elegante conservando los números de línea reales.
+  - Reconoce bloques `<<<<<<<` / `=======` / `>>>>>>>` con acciones de un clic: **Conservar actual (HEAD)**, **Conservar entrante (rama)** y **Conservar ambos**.
+  - Al guardar, escribe directamente en el archivo y resuelve el estado de conflicto.
+- **Configuración de credenciales en el panel sin terminal**:
+  - Detecta la falta de credenciales en instancias privadas de GitLab/GitHub y muestra un formulario en la propia interfaz para guardarlas automáticamente sin usar la línea de comandos.
+- **Sincronización inteligente estilo VS Code**:
+  - Hace push directo si solo hay commits locales y pull solo cuando está atrasado; elimina el uso forzado de `--rebase` para evitar conflictos artificiales.
+  - Recuperación automática de estados de rebase interrumpidos (`rebase --abort`).
+- **Inyección contextual de prompts multilingüe**:
+  - Cambia dinámicamente a "💬 Enviar análisis de conflictos al chat" cuando hay conflictos, generando instrucciones precisas en español, inglés o chino.
+  - Compatibilidad total con el nuevo editor enriquecido Lexical de DSH Web.
+- **Acciones rápidas y protección contra reentrancia**:
+  - La insignia de atraso (`↓101`) permite hacer pull con un solo clic.
+  - Menú contextual con opciones de Pull y Fetch total, con bloqueo de concurrencia y botón de cancelación.
 - **Acciones sobre commits del gráfico**: haga clic en un nodo de commit del gráfico para **cherry-pick a la rama actual** o **revertirlo** (`git revert --no-edit`)
 - **Multilingüe**: sigue el idioma de la interfaz web de DSH (chino / inglés); los navegadores en español reciben automáticamente el texto en español; por defecto chino simplificado
 - **Pestaña nativa en la barra lateral derecha**: el panel Git es una pestaña de primera clase junto a «Archivos»; expandir, contraer, arrastrar el ancho y cambiar de pestaña los gestiona la barra lateral oficial, sin reescribir el diseño de la página

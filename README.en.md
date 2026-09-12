@@ -27,11 +27,21 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
   - **Split / unified** layouts, **collapse unchanged regions** (3 lines of context, click to expand), **word wrap** toggle, **font zoom**, and a **manual edit** mode
   - The header shows `+added / −removed` counts; "Source" returns to the official text preview, "Stage" runs `git add`, "Save" writes back to the workspace
   - Only files that **actually have changes** are claimed by this view; untouched files keep using the official preview, so the two never interfere
-- **One-click merge-conflict resolution**: when a file contains `<<<<<<<` / `=======` / `>>>>>>>` markers the view switches to the conflict panel, showing both sides per block with **Keep Current**, **Keep Incoming (branch)**, and **Keep Both** actions; hit "Save" to write the resolution back to the file
-- **One-click Chat Context Injection**:
-  - **Send Changes to Chat**: click "💬 Send changes to chat input" in the changes header to generate a structured prompt listing modified files, allowing the AI agent to summarize or compose commit messages
-  - **Per-file Quick Actions**: each staged/unstaged file provides "📋 Copy relative path", "💬 Ask Agent about this file", and one-click "↩️ Discard Changes" with safety confirmation
-  - **Send Diff to Chat**: click "💬 Send diff to chat input" in the diff header to insert the selected file's unified diff directly into the prompt box for detailed code review
+- **Full-Context Merge-Conflict Resolution**:
+  - Immediately centers the conflict block on the first screen with 8 lines of clear surrounding code context; distant code collapses gracefully with line numbers preserved.
+  - Automatically identifies `<<<<<<<` / `=======` / `>>>>>>>` markers with **Accept Current (HEAD)**, **Accept Incoming (branch)**, and **Accept Both** one-click actions.
+  - Saving writes changes back and automatically resolves the conflicted state.
+- **Zero-Terminal In-Place Credential Setup**:
+  - Automatically detects missing credentials for private GitLab/GitHub instances and prompts with an elegant in-place modal to save username/tokens without touching the CLI.
+- **VS Code-Grade Intelligent Sync**:
+  - Pushes directly when ahead, pulls only when behind; completely eliminates forced `--rebase` and prevents artificial rebase conflicts.
+  - Automatic `rebase --abort` recovery from interrupted rebase states.
+- **Context-Aware Multilingual Prompt Injection**:
+  - Dynamically changes to "💬 Send conflict analysis to chat" when conflicts are detected, composing targeted diagnostic prompts in English, Chinese, and Spanish.
+  - Full compatibility with the latest DSH Lexical rich text composer.
+- **Fast Actions & Reentrancy Guards**:
+  - Clickable behind (`↓101`) badge for instant pulling.
+  - Right-click menu with Pull & Fetch-all options, busy locks, and cancellation buttons.
 - **Graph commit actions**: click a commit node in the graph to **cherry-pick it onto the current branch** or **revert it** (`git revert --no-edit`)
 - **Multilingual**: follows the DSH Web UI language (Chinese / English); Spanish browsers automatically get Spanish copy; defaults to Simplified Chinese
 - **Native right-sidebar tab**: the Git panel is a first-class tab beside the built-in "Files" tab — expand, collapse, width dragging, and tab switching are all owned by the official sidebar, with no page-layout rewriting
