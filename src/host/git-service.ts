@@ -385,7 +385,13 @@ export class GitService {
   /** 工作区状态摘要：变更文件列表（git status --porcelain）并自动读取 MERGE_MSG。 */
   async status(path: string): Promise<{ ok: boolean; output: string; mergeMsg?: string; error?: { code: string; message: string } }> {
     const canonical = await this.requireWorkspace(path)
-    const run = await this.runner.run(['status', '--porcelain'], canonical)
+    // 必须带 --untracked-files=all，且必须与 fileStatus() 用同一组参数。
+    // git 默认是 normal：整个未跟踪目录会被折叠成一行 `?? dir/`，于是
+    // 「目录里有 11 个文件」在面板上只显示 1 行，其中到底有什么完全看不到；
+    // 而且折叠行的路径带尾部斜杠，行内动作（内嵌 diff / 复制路径）拿到
+    // 目录而非文件路径，行为不正确。fileStatus() 一直是 all，这里对齐后
+    // 两条路径对同一仓库给出同样的结论（否则状态栏计数与文件树标记会打架）。
+    const run = await this.runner.run(['status', '--porcelain', '--untracked-files=all'], canonical)
     if (run.exitCode !== 0) {
       return { ok: false, output: '', error: { code: 'status-failed', message: run.stderr.trim() || 'git status failed' } }
     }
@@ -465,6 +471,27 @@ export class GitService {
       return { ok: false, output: '', error: { code: 'diff-failed', message: run.stderr.trim() || 'git diff failed' } }
     }
     return { ok: true, output: run.stdout }
+  }
+
+  /**
+   * 暂存区（staged）的变更内容，外加仓库最近的提交主题。
+   *
+   * 自动生成提交信息只需这两样：`git diff --cached` 说明「改了什么」，
+   * 最近的主题说明「这个仓库怎么写提交信息」（语言 / 前缀 / 语气）。
+   * 暂存区为空时 diff 为空串，由调用方据此给出提示且不触发生成。
+   */
+  async stagedContext(path: string): Promise<{ ok: true; diff: string; subjects: string[] } | { ok: false; error: GitError }> {
+    const canonical = await this.requireWorkspace(path)
+    const run = await this.runner.run(['diff', '--cached'], canonical)
+    if (run.exitCode !== 0) {
+      return { ok: false, error: { code: 'diff-failed', message: run.stderr.trim() || 'git diff --cached failed' } }
+    }
+    // 首条提交之前 log 会失败（无可引用的 HEAD），那不是错误，只是没有可模仿的先例。
+    const log = await this.runner.run(['log', '-5', '--format=%s'], canonical)
+    const subjects = log.exitCode === 0
+      ? log.stdout.split('\n').map((line) => line.trim()).filter((line) => line !== '')
+      : []
+    return { ok: true, diff: run.stdout, subjects }
   }
 
   /** 获取文件 HEAD 版本的内容（git show HEAD:<仓库相对路径>）。 */
