@@ -2,6 +2,39 @@
 
 `dsh-git-panel` 的版本变更记录。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.1.20] - 2026-09-30
+
+### Fixed
+
+- **升级官方 `0.2.0-rc.1` 后 Git 面板永远显示「打开项目会话后显示 Git 面板」**（工作区明明有 git）。
+  根因是官方**破坏性移除了会话列表快照的 `current` 字段**：
+
+  | 官方版本 | `SessionListState` |
+  | --- | --- |
+  | `0.1.5-rc.2` / `0.1.6-alpha.2` | 有 `current: SessionId \| undefined` ✅ 插件正常 |
+  | **`0.2.0-rc.1`** | **`current` 被移除**，只剩 `ids` + `byId` ❌ 插件失效 |
+
+  插件此前用 `sessions.list.getSnapshot().current` 取当前会话，在新版下恒为 `undefined`
+  → `cwd` 恒为空 → 面板永远停在空状态。
+
+  **现改用官方插槽标准 props `sessionId`**：`sidebar.right.pane.tab` 的 scope 是 `'session'`，
+  官方会把 `SessionStandardProps.sessionId` 一并注入内容体（官方运行时源码
+  `ui-session`：`props: ["sessionId"], resolve: (binding) => ({ …, props: { sessionId: binding.sessionId } })`；
+  官方契约原话 "everything a body needs at runtime arrives in its props"）。
+
+  该修复**跨版本通用**：`sessionId` 标准 prop 在 `0.1.5-rc.2`、`0.1.6-alpha.2`、`0.2.0-rc.1`
+  中均存在，因此不抬高最低版本要求。
+
+- **后台变更轮询同样取不到当前会话**：`client/index.ts` 的变更清单轮询（负责预热装饰缓存与
+  文件树标记）也不在任何插槽内，拿不到标准 props。新增 `client/active-session.ts` 共享暂存，
+  由会话作用域组件（`BranchChip` / `GitTabBody`）写入当前 `sessionId`、轮询读取；
+  若尚无组件挂载则退化为列表首个会话（`ids[0]`，宿主列表顺序即最近使用）。
+
+### Notes
+
+- `BranchChip` 早已正确使用 `sessionId` 标准 prop，本次是让 **Git 面板本体与后台轮询**
+  与之一致 —— 此前两处用了并不存在的 `snapshot.current`。
+
 ## [0.1.19] - 2026-09-16
 
 ### Fixed

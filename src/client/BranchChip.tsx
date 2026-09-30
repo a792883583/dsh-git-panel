@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { BranchesView } from '../core/types.ts'
+import { setActiveSessionId } from './active-session.ts'
 import { GitPanelApi } from './api.ts'
 import { icon } from './icons.tsx'
 import { useT } from './i18n.ts'
@@ -129,6 +130,8 @@ export function BranchChip(props: BranchChipProps): React.ReactElement | null {
 
   useEffect(() => {
     console.debug('[dsh-git-panel] chip mount', { sessionId, hasSessions: !!sessions, cwd })
+    // 把当前会话身份共享给后台轮询（它不在插槽内，拿不到标准 props）。
+    setActiveSessionId(sessionId)
   }, [sessionId, sessions, cwd])
 
   // 标签：只做轻量的当前分支探测。完整的分支列表在弹层打开时才请求——

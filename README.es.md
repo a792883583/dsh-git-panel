@@ -77,6 +77,16 @@ Un plugin de panel de Git para la GUI web de DSH: gestión de ramas (cambiar / t
 
 ![Gráfico de commits](docs/graph.png?v=0.1.18)
 
+## Requisitos
+
+- **Versión mínima: host DSH ≥ `0.1.5-alpha.1`** (`@deepseek-ai/dsh-client-ui-sidebar-right` ≥ `0.1.5-alpha.1`, ya declarado en `peerDependencies`).
+- **Verificado en**: `0.1.5-rc.2`, `0.1.6-alpha.1/2` y **`0.2.0-rc.1`** (última actual).
+- **Contratos oficiales en los que se apoya** (presentes desde `0.1.5-alpha.1`, por lo que la corrección es válida en todas las versiones):
+  - el slot con ámbito de sesión `sidebar.right.pane.tab` (declarado `scope: 'session'`) entrega la prop estándar **`sessionId`** (identidad de la sesión actual)
+  - la instantánea de la lista de sesiones `sessions.list.getSnapshot()` expone **`ids`** y **`byId[id].cwd`** (raíz del espacio de trabajo)
+  - ⚠️ **No dependa del campo `current` de la instantánea**: upstream lo eliminó en `0.2.0-rc.1` (ese servicio documenta "view selection remains outside the Controller"); la identidad de la sesión actual solo llega por las props estándar del slot
+- **Dependencias**: un panel de cliente más la ejecución de comandos git en el host. No requiere otros plugins.
+
 ## Instalación
 
 ```sh

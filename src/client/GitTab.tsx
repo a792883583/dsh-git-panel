@@ -12,14 +12,22 @@
  */
 
 import { createElement, useCallback, useEffect, useState } from 'react'
+import { setActiveSessionId } from './active-session.ts'
 import { GitPanelApi } from './api.ts'
 import { GitPanel } from './Panel.tsx'
 import type { GitStatusCache } from './git-status.ts'
 
-/** sessions 服务的最小结构面孔（鸭子类型，避免依赖宿主 SDK 类型）。 */
+/** sessions 服务的最小结构面孔（鸭子类型，避免依赖宿主 SDK 类型）。
+ *
+ * ⚠️ 官方 `SessionListState`（`dsh-api-session-controller/lib/types/client/sessions/service`）只有：
+ *   · `ids: SessionId[]`                        —— 宿主列表顺序
+ *   · `byId: Record<SessionId, SessionSummary>` —— 含可选 `cwd`
+ * **没有 `current` 字段**：该服务的注释写明 "view selection remains outside the
+ * Controller"。当前会话身份必须由**插槽标准 props** 提供（见 GitTabBodyProps.sessionId）。
+ */
 export interface TabSessions {
   list: {
-    getSnapshot(): { current?: string; byId: Record<string, { cwd?: string }> }
+    getSnapshot(): { current?: string; ids?: string[]; byId: Record<string, { cwd?: string }> }
     subscribe(fn: () => void): () => void
   }
 }
@@ -42,17 +50,37 @@ export interface GitTabBodyProps {
   statusCache?: GitStatusCache
   /** 注入工厂给出的初始路径（可选，订阅后会以实时快照为准）。 */
   path?: string
+  /**
+   * **当前会话身份**，由官方插槽标准 props 下发。
+   *
+   * `sidebar.right.pane.tab` 的 scope 是 `'session'`，因此官方会把
+   * `SessionStandardProps.sessionId` 一并传给内容体（官方契约原话：
+   * "everything a body needs at runtime arrives in its props"）。
+   *
+   * ⚠️ 这是取得当前工作区的**唯一正确来源**。此前改用会话列表快照的
+   * `snapshot.current`，但官方 `SessionListState` 里并没有该字段，导致 path 恒为空、
+   * 面板永远显示「打开项目会话后显示 Git 面板」。
+   */
+  sessionId?: string
   /** 官方注入的标签钩子。 */
   useTabInfo?: () => TabInfo
 }
 
-/** 从会话快照读取当前工作区路径。 */
-function readPath(sessions: TabSessions | undefined): string {
-  if (!sessions) return ''
-  const snapshot = sessions.list.getSnapshot()
-  const sessionId = snapshot.current
-  const cwd = sessionId === undefined ? undefined : snapshot.byId[sessionId]?.cwd
-  return typeof cwd === 'string' ? cwd : ''
+/**
+ * 由会话 id 取工作区根目录（cwd）。
+ *
+ * @param sessions - sessions 服务
+ * @param sessionId - 会话身份（来自插槽标准 props）
+ * @returns 该会话的 cwd；未知时返回空串
+ */
+function cwdOfSession(sessions: TabSessions | undefined, sessionId: string | undefined): string {
+  if (!sessions || sessionId === undefined || sessionId === '') return ''
+  try {
+    const cwd = sessions.list.getSnapshot().byId[sessionId]?.cwd
+    return typeof cwd === 'string' ? cwd : ''
+  } catch {
+    return ''
+  }
 }
 
 /** 由会话身份与工作区相对路径拼出文件资源地址。 */
@@ -63,23 +91,25 @@ function addressOf(sessionId: string, relative: string): string {
 
 /** 官方右侧栏中的 Git 面板。 */
 export function GitTabBody(props: GitTabBodyProps): React.ReactElement {
-  const { sessions, statusCache } = props
+  const { sessions, statusCache, sessionId } = props
   const [api] = useState<GitPanelApi>(() => props.api ?? new GitPanelApi())
-  const [path, setPath] = useState<string>(() => props.path ?? readPath(sessions))
+  const [path, setPath] = useState<string>(() => props.path ?? cwdOfSession(sessions, sessionId))
   const info = props.useTabInfo?.()
 
+  // 跟随「当前会话」：sessionId 来自插槽标准 props，会话切换时它变化 → 重算工作区；
+  // 同时订阅会话列表快照，cwd 后续才加载出来时也能补上。
   useEffect(() => {
+    // 共享给后台轮询（它不在插槽内，拿不到标准 props）。
+    setActiveSessionId(sessionId)
     if (!sessions) return undefined
-    const update = (): void => setPath(readPath(sessions))
+    const update = (): void => setPath(cwdOfSession(sessions, sessionId))
     update()
     return sessions.list.subscribe(update)
-  }, [sessions])
+  }, [sessions, sessionId])
 
   /** 在右侧栏以 Git 对比视图打开某个变更文件。 */
   const openDiff = useCallback((relative: string): boolean => {
-    const snapshot = sessions?.list.getSnapshot()
-    const sessionId = snapshot?.current
-    if (sessionId === undefined || relative === '') return false
+    if (sessionId === undefined || sessionId === '' || relative === '') return false
     try {
       info?.tab.actions.openResource(addressOf(sessionId, relative), { kind: 'git-diff' })
       return true
@@ -87,7 +117,7 @@ export function GitTabBody(props: GitTabBodyProps): React.ReactElement {
       console.warn('dsh-git-panel: open diff failed', error)
       return false
     }
-  }, [info, sessions])
+  }, [info, sessionId])
 
   /** 面板刷新时同步刷新装饰缓存。 */
   const refreshStatus = useCallback((): void => {

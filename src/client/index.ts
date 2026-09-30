@@ -14,6 +14,7 @@
 
 import { createElement } from 'react'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import { getActiveSessionId } from './active-session.ts'
 import { GitPanelApi } from './api.ts'
 import { BranchChip } from './BranchChip.tsx'
 import { initI18n, t } from './i18n.ts'
@@ -37,7 +38,10 @@ interface PanelClientContext {
   }
   sessions: {
     list: {
-      getSnapshot(): { current?: string; byId: Record<string, { cwd?: string }> }
+      /** 官方 `SessionListState`：`ids`（宿主列表顺序）+ `byId`（含可选 `cwd`）。
+       *  ⚠️ **没有 `current`** —— 该服务注释写明 "view selection remains outside the
+       *  Controller"，当前会话身份只由插槽标准 props 下发。 */
+      getSnapshot(): { current?: string; ids?: string[]; byId: Record<string, { cwd?: string }> }
       subscribe(fn: () => void): () => void
     }
   }
@@ -146,8 +150,17 @@ export function apply(ctx: PanelClientContext): void {
   ctx.inject(['sessions'], () => {
     try {
       const refresh = (): void => {
-        const current = ctx.sessions.list.getSnapshot().current
-        const cwd = cwdOf(current)
+        /* 当前会话身份来自**插槽标准 props**（由 BranchChip / GitTabBody 写入共享暂存）。
+         *
+         * ⚠️ 不能用 `snapshot.current` —— 官方 `SessionListState` 只有 `ids` / `byId`，
+         * 没有该字段（该服务注释写明 "view selection remains outside the Controller"）。
+         * 曾因此导致 cwd 恒为空、Git 面板长期显示「打开项目会话后显示」。
+         *
+         * 兼容兜底：若尚无插槽组件挂载，退化为「列表首个会话」——`ids` 是宿主列表顺序，
+         * 首个即最近使用的主会话，足以把装饰缓存预热起来。 */
+        const snapshot = ctx.sessions.list.getSnapshot()
+        const active = getActiveSessionId() ?? snapshot.ids?.[0]
+        const cwd = cwdOf(active)
         if (cwd !== '') void statusCache.ensure(cwd)
         // 文件树可能属于其它会话（多会话并行），它们的工作区同样要保活。
         for (const root of statusCache.roots()) {

@@ -82,6 +82,16 @@ DSH Web GUI 的 Git 面板插件：分支管理（切换 / 拉取 / 抓取 / 重
 
 ![提交图谱](docs/graph.png?v=0.1.18)
 
+## 环境要求
+
+- **最低版本要求：DSH 宿主 ≥ `0.1.5-alpha.1`**（`@deepseek-ai/dsh-client-ui-sidebar-right` ≥ `0.1.5-alpha.1`，`peerDependencies` 已声明）。
+- **已验证版本**：`0.1.5-rc.2`、`0.1.6-alpha.1/2`、**`0.2.0-rc.1`**（当前最新）。
+- **依赖的官方契约**（自 `0.1.5-alpha.1` 起齐备，跨版本通用）：
+  - 会话作用域插槽 `sidebar.right.pane.tab`（官方声明 `scope: 'session'`）下发标准 props **`sessionId`**（当前会话身份）
+  - 会话列表快照 `sessions.list.getSnapshot()` 的 **`ids`** 与 **`byId[id].cwd`**（工作区根目录）
+  - ⚠️ **不要再依赖快照的 `current` 字段** —— 官方已于 `0.2.0-rc.1` 将其移除（该服务注释写明 "view selection remains outside the Controller"），当前会话身份**只能**从插槽标准 props 获取
+- **依赖**：纯前端面板 + 宿主侧 git 命令执行，无需其它插件。
+
 ## 安装
 
 ```sh

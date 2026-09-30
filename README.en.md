@@ -79,6 +79,16 @@ A Git panel plugin for the DSH Web GUI: branch management (switch / pull / fetch
 
 ![Commit graph](docs/graph.png?v=0.1.18)
 
+## Requirements
+
+- **Minimum version: DSH host ≥ `0.1.5-alpha.1`** (`@deepseek-ai/dsh-client-ui-sidebar-right` ≥ `0.1.5-alpha.1`, as declared in `peerDependencies`).
+- **Verified on**: `0.1.5-rc.2`, `0.1.6-alpha.1/2`, and **`0.2.0-rc.1`** (current latest).
+- **Official contracts this plugin relies on** (all present since `0.1.5-alpha.1`, so the fix works across versions):
+  - the session-scoped slot `sidebar.right.pane.tab` (declared `scope: 'session'`) delivers the standard prop **`sessionId`** (the current session identity)
+  - the session-list snapshot `sessions.list.getSnapshot()` exposes **`ids`** and **`byId[id].cwd`** (the workspace root)
+  - ⚠️ **Do not rely on the snapshot's `current` field** — upstream removed it in `0.2.0-rc.1` (that service documents "view selection remains outside the Controller"); the current session identity is only available from slot standard props
+- **Dependencies**: a client-side panel plus host-side git command execution. No other plugins required.
+
 ## Installation
 
 ```sh
