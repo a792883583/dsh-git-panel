@@ -2,6 +2,13 @@
 
 `dsh-git-panel` 的版本变更记录。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.1.21] - 2026-11-21
+
+### Changed
+
+- 移除 0.2 已不存在的 `@deepseek-ai/dsh-client-runtime` 注入与 peer 声明，devDependencies 升到 0.2.2-rc.5 / Cordis 4.1。
+- 在 DSH 0.2.2 包上重跑 typecheck 与构建；0.1.20 对 `SessionListState.current` 移除的适配继续有效。
+
 ## [0.1.20] - 2026-09-30
 
 ### Fixed
