@@ -468,6 +468,22 @@ export class GitService {
   }
 
   /** 获取文件 HEAD 版本的内容（git show HEAD:<仓库相对路径>）。 */
+  /** 已暂存改动的摘要（给 AI 生成提交信息用，有长度上限）。 */
+  async stagedSummary(path: string): Promise<{ ok: boolean; text?: string; error?: GitError }> {
+    const canonical = await this.requireWorkspace(path)
+    const toplevel = await this.repoRoot(canonical)
+    const stat = await this.runner.run(['diff', '--cached', '--stat', '--no-renames'], toplevel)
+    if (stat.exitCode !== 0) {
+      return { ok: false, error: { code: 'diff-failed', message: stat.stderr.trim() || 'git diff failed' } }
+    }
+    if (stat.stdout.trim() === '') {
+      return { ok: false, error: { code: 'nothing-staged', message: 'no staged changes' } }
+    }
+    const diff = await this.runner.run(['diff', '--cached', '--no-ext-diff', '--unified=0'], toplevel)
+    const text = `${stat.stdout.trim()}\n\n${diff.stdout}`.slice(0, 12000)
+    return { ok: true, text }
+  }
+
   async showHead(path: string, file: string): Promise<{ ok: boolean; output: string; error?: { code: string; message: string } }> {
     const canonical = await this.requireWorkspace(path)
     const name = file.trim()

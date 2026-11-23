@@ -120,6 +120,10 @@ export class GitPanelApi {
     return post<OpResult>('/git-panel/revert', { path, sha })
   }
 
+  aiCommitMessage(path: string) {
+    return post<{ message: string }>('/git-panel/ai-commit-message', { path })
+  }
+
   commit(path: string, message: string) {
     return post<OpResult>('/git-panel/commit', { path, message })
   }

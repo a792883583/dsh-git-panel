@@ -2,6 +2,13 @@
 
 `dsh-git-panel` 的版本变更记录。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.1.22] - 2026-11-23
+
+### Added
+
+- 提交框旁新增「AI 生成」按钮：按已暂存的 diff 生成 Conventional Commit 主题，写入提交框后仍由用户确认再提交。
+  复用 `dsh-message-gateway@0.1.37` 暴露的 `ctx.messageGateway.ask()`；未安装消息网关时按钮给出明确错误，不影响其它 Git 操作。
+
 ## [0.1.21] - 2026-11-21
 
 ### Changed

@@ -37,7 +37,10 @@ function createWorkspaceGate(ctx: Context): WorkspaceGate {
 /** 挂载 git 服务及其路由。 */
 export function apply(ctx: Context): void {
   const service = new GitService(subprocessRunner(ctx), createWorkspaceGate(ctx))
-  ctx.effect(() => registerGitPanelRoutes(ctx, service), 'dsh-git-panel: /git-panel routes')
+  ctx.effect(() => {
+    const gateway = (ctx as unknown as { messageGateway?: { ask(prompt: string, timeoutMs?: number): Promise<{ ok: boolean; reply: string }> } }).messageGateway
+    return registerGitPanelRoutes(ctx, service, gateway)
+  }, 'dsh-git-panel: /git-panel routes')
 }
 
 /** Cordis 插件入口——命名导出与默认导出并存，确保加载器总能解析到。 */

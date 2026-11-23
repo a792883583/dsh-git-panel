@@ -770,6 +770,7 @@ export function GitPanel(props: {
   const [renameValue, setRenameValue] = useState('')
   // 写操作：提交信息、变更状态、暂存列表。
   const [commitMsg, setCommitMsg] = useState('')
+  const [aiCommitting, setAiCommitting] = useState(false)
   const [statusText, setStatusText] = useState('')
   const [stashText, setStashText] = useState('')
   // 变更文件列表 + 选中的文件 diff。
@@ -881,6 +882,24 @@ export function GitPanel(props: {
     setPendingOp(null)
     setBusy(false)
   }, [path, api, busy, commitMsg, t, refreshStatus, load, onRefreshStatus])
+
+  const generateCommitMessage = useCallback(async (): Promise<void> => {
+    if (!path || busy || aiCommitting) return
+    setAiCommitting(true)
+    setMessage(null)
+    try {
+      const result = await api.aiCommitMessage(path)
+      if (result.ok) {
+        setCommitMsg(result.value.message)
+      } else {
+        setMessage({ text: tError(result.error?.code, result.error?.message ?? t('op.failed')), kind: 'err' })
+      }
+    } catch (error) {
+      setMessage({ text: error instanceof Error ? error.message : String(error), kind: 'err' })
+    } finally {
+      setAiCommitting(false)
+    }
+  }, [path, api, busy, aiCommitting, t])
 
   // 输入 dock 的 chip 会在一次成功的分支切换后派发这个事件。
   useEffect(() => {
@@ -1033,6 +1052,11 @@ export function GitPanel(props: {
             }} />
           <button className="dsh-gp-btn" disabled={busy || commitMsg.trim() === ''}
             onClick={() => void runWrite('commit')}>{t('write.commit')}</button>
+          <button className="dsh-gp-btn" disabled={busy || aiCommitting}
+            title={t('write.aiCommit')}
+            onClick={() => void generateCommitMessage()}>
+            {aiCommitting ? <><span className="dsh-gp-spinner" /> {t('write.aiCommit')}</> : t('write.aiCommit')}
+          </button>
           <button className="dsh-gp-btn" disabled={busy}
             onClick={() => void runWrite('push')}>
             {pendingOp === 'push' ? <><span className="dsh-gp-spinner" /> {t('op.pushing')}</> : t('write.push')}

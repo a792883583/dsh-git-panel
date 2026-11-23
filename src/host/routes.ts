@@ -49,7 +49,22 @@ function field(payload: unknown, key: string): string | null {
 
 const BAD_REQUEST: GitError = { code: 'internal', message: 'malformed request' }
 
-function route(service: GitService) {
+/** 消息网关提供的按需 AI 问答能力（可选依赖，避免硬绑定插件）。 */
+export type AiGateway = {
+  ask(prompt: string, timeoutMs?: number): Promise<{ ok: boolean; reply: string }>
+}
+
+/** 从模型输出里取一条可用的提交信息（去代码围栏、只取首行）。 */
+function cleanCommitMessage(text: string): string {
+  const line = text
+    .replace(/^```[a-z]*\s*/i, '')
+    .split('\n')
+    .map((x) => x.trim())
+    .find((x) => x !== '' && !x.startsWith('```')) ?? ''
+  return line.replace(/^[-*•]\s*/, '').slice(0, 120)
+}
+
+function route(service: GitService, gateway?: AiGateway) {
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const url = new URL(req.url ?? '/', 'http://dsh')
     const path = url.pathname
@@ -132,6 +147,33 @@ function route(service: GitService) {
         case '/git-panel/status': {
           const value = await service.status(root)
           json(res, value.ok ? { ok: true, value } : { ok: false, error: value.error ?? BAD_REQUEST })
+          return
+        }
+        case '/git-panel/ai-commit-message': {
+          if (gateway === undefined) {
+            json(res, { ok: false, error: { code: 'gateway-unavailable', message: 'message-gateway plugin not installed' } }, 400)
+            return
+          }
+          const summary = await service.stagedSummary(root)
+          if (!summary.ok) {
+            json(res, { ok: false, error: summary.error ?? BAD_REQUEST }, 400)
+            return
+          }
+          const prompt = [
+            'You write Conventional Commit messages. Given the staged git diff below, output ONLY one commit subject line, no quotes, no markdown, no explanation.',
+            'Format: <type>(optional scope): <imperative summary>',
+            'Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.',
+            'Keep it under 72 characters. Use the language of the diff when obvious; otherwise English.',
+            '',
+            summary.text ?? '',
+          ].join('\n')
+          const answer = await gateway.ask(prompt, 60_000)
+          const message = cleanCommitMessage(answer.reply)
+          if (!answer.ok || message === '') {
+            json(res, { ok: false, error: { code: 'ai-failed', message: answer.reply || 'AI returned no commit message' } }, 400)
+            return
+          }
+          json(res, { ok: true, value: { message } })
           return
         }
         case '/git-panel/commit': {
@@ -291,6 +333,6 @@ function route(service: GitService) {
 }
 
 /** 注册 /git-panel 各路由。 */
-export function registerGitPanelRoutes(ctx: Context, service: GitService): () => void {
-  return ctx.webServer.register({ kind: 'prefix', path: '/git-panel', handler: route(service) })
+export function registerGitPanelRoutes(ctx: Context, service: GitService, gateway?: AiGateway): () => void {
+  return ctx.webServer.register({ kind: 'prefix', path: '/git-panel', handler: route(service, gateway) })
 }
